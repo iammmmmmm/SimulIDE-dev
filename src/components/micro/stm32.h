@@ -7,6 +7,7 @@
 
 #include "qemudevice.h"
 #include "ioport.h"
+#include "qemutwi.h"
 
 class LibraryItem;
 
@@ -36,4 +37,6 @@ class Stm32 : public QemuDevice
         IoPort m_portB;
         IoPort m_portC;
         IoPort m_portD;
+
+        QemuTwi m_i2c[2];
 };
