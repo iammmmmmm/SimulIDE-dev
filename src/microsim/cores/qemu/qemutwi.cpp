@@ -32,6 +32,7 @@ void QemuTwi::reset()
 
 void QemuTwi::doAction( uint32_t action, uint8_t data )
 {
+    qDebug() << "QemuTwi::doAction:"<<action<<"data:"<<data;
     if( m_mode != TWI_MASTER )
     {
         setFreqKHz( 100 );
@@ -54,7 +55,7 @@ void QemuTwi::doAction( uint32_t action, uint8_t data )
     else
     {
         m_nextAction = newAction;
-        //qDebug() <<".....................";
+        qDebug() <<"m_nextAction = newAction;";
         runNextAction();
     }
 }
@@ -92,18 +93,21 @@ uint64_t simTime = Simulator::self()->circTime()/1000000;
             qDebug()<< simTime << "QI2C NOACK" ;
             break;
         case QI2C_WRITE:
-            //qDebug()<< simTime << "QI2C WRITE" << m_nextAction->data ;
+            qDebug()<< simTime << "QI2C WRITE" << m_nextAction->data ;
             masterWrite( m_nextAction->data, false, false );
             break;
         case QI2C_READ:
             qDebug()<< simTime << "QI2C READ";
             break;
         case QI2C_MATCH:
-            //qDebug()<< simTime << "QI2C MATCH" << m_nextAction->data;
+            qDebug()<< simTime << "QI2C MATCH" << m_nextAction->data;
             m_txAddress = m_nextAction->data;
             masterStart();
             //m_device->getArena()->data32 = 0; // report operation end
             break;
+        default:
+            qDebug()<< "action" << m_nextAction->action;
+
     }
 }
 

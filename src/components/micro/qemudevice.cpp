@@ -74,8 +74,8 @@ QemuDevice::QemuDevice( QString type, QString id )
     }
     else qDebug() << "Error creating arena";
 
-    m_qemuProcess.setProcessChannelMode( /*QProcess::MergedChannels*/ QProcess::ForwardedChannels ); // Merge stdout and stderr
-
+//    m_qemuProcess.setProcessChannelMode( /*QProcess::MergedChannels*/ QProcess::ForwardedChannels ); // Merge stdout and stderr
+	m_qemuProcess.setProcessChannelMode( QProcess::MergedChannels );
     Simulator::self()->addToUpdateList( this );
 
     addPropGroup( { tr("Main"),{
@@ -166,7 +166,7 @@ void QemuDevice::stamp()
 
 void QemuDevice::updateStep()
 {
-    return;
+   // return;
 
     QString output = m_qemuProcess.readAllStandardOutput();
     if( !output.isEmpty() )

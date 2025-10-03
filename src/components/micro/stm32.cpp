@@ -17,6 +17,10 @@ enum actions{
     GPIO_OUT = 1,
     GPIO_DIR,
     GPIO_IN,
+    IOMUX,
+    MATRIX_IN,
+    MATRIX_OUT,
+    I2C,
 };
 
 
@@ -121,6 +125,9 @@ Stm32::Stm32( QString type, QString id )
     m_executable = "./data/STM32/qemu-system-arm";
 
     m_firmware ="";
+
+    m_i2c[0].setDevice( this );
+    m_i2c[1].setDevice( this );
 
     createPins();
 
@@ -239,19 +246,180 @@ void Stm32::doAction()
         {
             uint8_t  port = m_arena->data8;
             uint16_t dir  = m_arena->data16;
-
-            qDebug() << "Stm32::doAction GPIO_DIR Port:"<< port << "Directions:" << dir;
+            uint32_t gpio_configs= m_arena->data32;//pin0/8 -> bit 31-28
+            uint16_t cr_index =m_arena->mask16;
+            uint32_t GPIOxODR =m_arena->mask32;
+            qDebug() << "Stm32::doAction GPIO_DIR Port:"<< port << "Directions:" << dir<<"cr_index"<<cr_index;
+            IoPort *io_port;
             switch( port ) {
-                case 1: m_portA.setDirection( dir ); break;
-                case 2: m_portB.setDirection( dir ); break;
-                case 3: m_portC.setDirection( dir ); break;
-                case 4: m_portD.setDirection( dir ); break;
+                case 1: io_port=&m_portA; break;
+                case 2: io_port=&m_portB; break;
+                case 3: io_port=&m_portC; break;
+                case 4: io_port=&m_portD; break;
+                    default:
+                    qWarning() << "Stm32::doAction GPIO_DIR unknown Port: "<< port<<" please check m_arena data 8";
+                   return ;
+            }
+            io_port->setDirection(dir);
+            int start_pin =7;
+            for (int i=0 ; i<8; i++) {
+                uint8_t pin_mode_4bit = (gpio_configs >> (start_pin - i) * 4) & 0xF;
+                uint8_t cnf1 = (pin_mode_4bit >> 3) & 0x1;
+                uint8_t cnf0 = (pin_mode_4bit >> 2) & 0x1;
+                uint8_t mode1 = (pin_mode_4bit >> 1) & 0x1;
+                uint8_t mode0 = pin_mode_4bit & 0x1;
+                uint8_t PxODR=(GPIOxODR>>i)&1;
+                uint8_t pin=i+(cr_index==0?0:7);
+                //qDebug()<<"pin:"<<i+(cr_index==0?0:7);
+                IoPin* io_pin=io_port->getPinN(pin);
+                if (!mode0&&!mode1)
+                {//input
+                    if (!cnf1&&!cnf0)// 0 0
+                    {//analog input cnf1 0 cnf0 0
+                    // qDebug()<<"//analog input cnf1 0 cnf0 0";
+                    }else if (!cnf1&&cnf0)// 0 1
+                    {//floating input cnf1 0 cnf0 1
+                    // qDebug()<<"//analog input cnf1 1 cnf0 0";
+
+                    }else if (cnf1&&!cnf0)
+                        {//1 0
+                        if (!PxODR)
+                        {//pull down input cnf1 1 cnf0 0 GPIO PxODR 0
+                         // qDebug()<<"//analog input cnf1 0 PxODR";
+                            io_pin->setPullup(40000);
+                        }else
+                        {//pull up input cnf1 1 cnf0 0 GPIO PxODR 1
+                        // qDebug()<<"//analog input cnf1 1 PxODR";
+                            io_pin->setPullup(40000);
+                        }
+                    }else {//TODO cnf 11 special circumstances
+                            if (!PxODR)
+                            {//pull down input cnf1 1 cnf0 1 GPIO PxODR 0
+                            // qDebug()<<"//analog input cnf1 0 PxODR";
+                                io_pin->setPullup(40000);
+                            }else
+                            {//pull up input cnf1 1 cnf0 1 GPIO PxODR 1
+                            // qDebug()<<"//analog input cnf1 1 PxODR";
+                                io_pin->setPullup(40000);
+                            }
+                    }
+
+                }else {//output
+                    //TODO process output speed
+                    //general Output
+                    if (!cnf1&&!cnf0) {
+                        // 0 0
+                        //push pull output cnf1 0 cnf0 0
+                        // qDebug()<<"//analog input cnf1 0 cnf0 0";
+                    }else if (!cnf1&&cnf0) {
+                        //open Drain output cnf1 0 cnf0 1
+                        // qDebug()<<"//analog input cnf1 1 cnf0 0";
+                    }else if (cnf1&&!cnf0) {//1 0
+                        //multiplexed output
+                        //push pull output cnf1 0 cnf0 0
+                        // qDebug()<<"//analog input cnf1 0 cnf0 0";
+                    }else if (cnf1&&cnf0) {
+                        //open Drain output cnf1 0 cnf0 1
+                        // qDebug()<<"//analog input cnf1 0 cnf0 0";
+                        if (port==2) {
+                            switch (pin) {
+                                case 6:m_i2c[0].setSclPin(io_pin);break;
+                                case 7:m_i2c[0].setSdaPin(io_pin);break;
+                                case 10:m_i2c[1].setSclPin(io_pin);break;
+                                case 11:m_i2c[1].setSdaPin(io_pin);break;
+                                default:
+                                    break;
+                            }
+                        }
+
+                    }
+                }
             }
         } break;
         case GPIO_IN:                  // Read Inputs
         {
             qDebug() << "Stm32::doAction GPIO_IN"<< m_arena->data32;
         } break;
+        case I2C:
+        {  int         id  = m_arena->data16;
+            uint8_t   data = m_arena->data8;
+            uint32_t event = m_arena->data32;
+
+            qDebug()<< "Stm32::doAction I2C id"<< id<<"data"<<data<<"event"<<event;
+
+            if( id < 2 ) m_i2c[id].doAction( event, data );
+            break;
+        }
+        // case MATRIX_IN:
+        // {
+        //     qDebug() << "Stm32::doAction MATRIX_IN";
+        //     IoPort* ioPort;
+        //     //switch port
+        //     switch( m_arena->mask8 ) {
+        //         case 1:
+        //             ioPort=&m_portA;
+        //             break;
+        //         case 2:
+        //             ioPort=&m_portB;
+        //             break;
+        //         case 3:
+        //             ioPort=&m_portC;
+        //             break;
+        //         case 4:
+        //             ioPort=&m_portD;
+        //             break;
+        //         default:
+        //             //TODO support GPIO PORT E F G H I J K....
+        //             qDebug() << "TODO support GPIO PORT E F G H I J K....";
+        //             return;
+        //     }
+        //     IoPin *ioPin = ioPort->getPin(QString(m_arena->data8));
+        //     if (ioPin==nullptr) {
+        //         qWarning()<<"ioPin=nullptr"; return;
+        //     }
+        //     //switch func
+        //     switch( m_arena->data32 ) {
+        //         case GPIO_MODE_AF_INPUT: {
+        //             if (m_arena->mask8==2&&m_arena->data8==10) {
+        //                 m_i2c[0].setSclPin(ioPin);
+        //             }
+        //             if (m_arena->mask8==2&&m_arena->data8==11) {
+        //                 m_i2c[0].setSdaPin(ioPin);
+        //             }
+        //             if (m_arena->mask8==2&&m_arena->data8==7) {
+        //                 m_i2c[1].setSdaPin(ioPin);
+        //             }
+        //             if (m_arena->mask8==2&&m_arena->data8==6) {
+        //                 m_i2c[1].setSdaPin(ioPin);
+        //             }
+        //             break;
+        //         }
+        //             case GPIO_MODE_AF_OD: {
+        //             break;
+        //         }
+        //             case GPIO_MODE_OUTPUT_OD: {
+        //
+        //             break;
+        //         }
+        //             case GPIO_MODE_OUTPUT_PP: {
+        //
+        //             break;
+        //         }
+        //
+        //             default: {
+        //             qDebug() << "Stm32::doAction MATRIX_IN data32:"<< m_arena->data32;
+        //             qDebug() << "Stm32::doAction MATRIX_IN mask32:"<< m_arena->mask32;
+        //             qDebug() << "Stm32::doAction MATRIX_IN data8:"<< m_arena->data8;
+        //             qDebug() << "Stm32::doAction MATRIX_IN mask8:"<< m_arena->mask8;
+        //         }
+        //     }
+        //     break;
+        // }
+        // case MATRIX_OUT:
+        // {
+        //     qDebug() << "Stm32::doAction MATRIX_OUT"<< m_arena->data32;
+        //     break;
+        // }
         default:
             qDebug() << "Stm32::doAction Unimplemented"<< m_arena->action;
     }
