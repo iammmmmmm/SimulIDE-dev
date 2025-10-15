@@ -9,7 +9,8 @@
 #include "ioport.h"
 #include "qemutwi.h"
 #include "qemuusart.h"
-
+#include<winsock2.h>
+#pragma comment(lib,"ws2_32.lib")
 class LibraryItem;
 class Stm32Pin;
 
@@ -37,6 +38,7 @@ class Stm32 : public QemuDevice
 
         void setPortState( std::vector<Stm32Pin*>* port, uint16_t state );
 
+        void usartReadData(uint8_t data,uint8_t index);
         uint16_t readInputs( uint8_t port );
 
         uint64_t m_frequency;
@@ -51,4 +53,6 @@ class Stm32 : public QemuDevice
         QemuTwi m_i2c[2];
 
         QemuUsart m_usart[3];
+        WSADATA wsd;
+        SOCKET m_SockClient = INVALID_SOCKET;
 };

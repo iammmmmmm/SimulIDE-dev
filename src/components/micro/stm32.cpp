@@ -10,6 +10,7 @@
 #include "stm32.h"
 #include "itemlibrary.h"
 //#include "iopin.h"
+#include "simulator.h"
 #include "stm32pin.h"
 
 #define tr(str) simulideTr("Stm32",str)
@@ -60,8 +61,22 @@ Stm32::Stm32( QString type, QString id )
     m_usart[0].setPins({m_portA.at(9), m_portA.at(10)}); // Remap (TX/PB6, RX/PB7)
     m_usart[1].setPins({m_portA.at(2), m_portA.at(3)}); // No remap (CTS/PA0, RTS/PA1, TX/PA2, RX/PA3, CK/PA4), Remap (CTS/PD3, RTS/PD4, TX/PD5, RX/PD6, CK/PD7)
     m_usart[2].setPins({m_portB.at(10), m_portB.at(11)});
+    m_usart[0].setMcuReadByte([this](uint8_t data) {
+        this->usartReadData(data,0);
+       });
+    m_usart[1].setMcuReadByte([this](uint8_t data) {
+       this->usartReadData(data,1);
+   });
+    m_usart[2].setMcuReadByte([this](uint8_t data) {
+       this->usartReadData(data,2);
+   });
 }
-Stm32::~Stm32(){}
+Stm32::~Stm32() {
+    if (m_SockClient != INVALID_SOCKET) {
+        closesocket(m_SockClient);
+    }
+    WSACleanup();
+}
 
 void Stm32::stamp()
 {
@@ -136,6 +151,20 @@ bool Stm32::createArgs()
     //m_arguments << "-kernel";
     //m_arguments << m_firmware;
 
+    m_arguments << "-chardev";
+    m_arguments << "socket,id=c0,host=127.0.0.1,port=4000,server=on,wait=off";
+    m_arguments << "-serial";
+    m_arguments << "chardev:c0";
+
+    m_arguments << "-chardev";
+    m_arguments << "socket,id=c1,host=127.0.0.1,port=4001,server=on,wait=off";
+    m_arguments << "-serial";
+    m_arguments << "chardev:c1";
+
+    m_arguments << "-chardev";
+    m_arguments << "socket,id=c2,host=127.0.0.1,port=4002,server=on,wait=off";
+    m_arguments << "-serial";
+    m_arguments << "chardev:c2";
     return true;
 }
 
@@ -225,6 +254,60 @@ void Stm32::setPortState( std::vector<Stm32Pin*>* port, uint16_t state )
     {
         Stm32Pin* ioPin = port->at( i );
         ioPin->setPortState( state & (1<<i) );
+    }
+}
+void Stm32::usartReadData(uint8_t data,uint8_t index) {
+   //FIXME This method needs to be improved
+    qDebug() << "Stm32::usartReadData"<<data<<"index"<<index;
+    // 检查套接字是否有效且已连接
+    if (m_SockClient == INVALID_SOCKET) {
+        qDebug() << "错误：套接字未连接或无效，无法发送数据。";
+        qDebug() << "Stm32::Stm32 - 正在初始化网络并连接...";
+        int initResult = WSAStartup(MAKEWORD(2, 2), &wsd);
+        if (initResult != 0) {
+            qDebug() << "WSAStartup 失败！错误码：" << initResult;
+            return;
+        }
+        sockaddr_in serverAddr;
+        serverAddr.sin_family = AF_INET;
+        serverAddr.sin_port = htons(4000 + 1);
+        serverAddr.sin_addr.S_un.S_addr = inet_addr("127.0.0.1");
+        m_SockClient = socket(AF_INET, SOCK_STREAM, 0);
+        if (m_SockClient == INVALID_SOCKET) {
+            qDebug() << "Socket 创建失败！错误码：" << WSAGetLastError();
+            WSACleanup();
+            return;
+        }
+        int connectResult = connect(m_SockClient, (sockaddr*)&serverAddr, sizeof(serverAddr));
+        if (connectResult == SOCKET_ERROR) {
+            qDebug() << "Connect 连接失败！错误码：" << WSAGetLastError();
+            closesocket(m_SockClient);
+            m_SockClient = INVALID_SOCKET; // 标记连接无效
+            WSACleanup();
+        } else {
+            qDebug() << "成功连接到服务器: 127.0.0.1:" << (4000 + 1);
+        }
+    }
+
+    // 1. 准备要发送的数据
+    // 将 uint8_t 变量的地址强制转换为 const char*，并指定长度为 1 字节
+    const char* sendBuf = reinterpret_cast<const char*>(&data);
+
+    // 2. 调用 send 函数发送数据
+    // 注意：我们将要发送的长度固定为 1 字节
+    int bytesSent = send(m_SockClient, sendBuf, 1, 0);
+
+    // 3. 检查发送结果
+    if (bytesSent == SOCKET_ERROR) {
+        qDebug() << "数据发送失败！错误码：" << WSAGetLastError();
+        // 实际应用中，可以在此尝试重新连接
+    } else if (bytesSent == 1) {
+        qDebug() << "成功发送 1 个字节。";
+    } else {
+        // TCP 不可能只发送了 0 字节而没有错误，除非连接已关闭
+        qDebug() << "警告：发送了 0 字节，连接可能已关闭。";
+        closesocket(m_SockClient);
+        m_SockClient = INVALID_SOCKET;
     }
 }
 

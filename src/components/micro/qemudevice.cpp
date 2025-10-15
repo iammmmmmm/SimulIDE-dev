@@ -155,7 +155,7 @@ void QemuDevice::stamp()
         uint64_t timeout = 0;
         while( !m_arena->state )   // Wait for Qemu running
         {
-            if( timeout++ > 5e9 ) // Don't wait forever
+            if( timeout++ > 60e9/*5e9*/ ) // Don't wait forever
             {
                 qDebug() << "Error: QemuDevice::stamp timeout";
                 m_qemuProcess.kill();
@@ -169,7 +169,7 @@ void QemuDevice::stamp()
 
 void QemuDevice::updateStep()
 {
-    return;
+
 
     QString output = m_qemuProcess.readAllStandardOutput();
     if( !output.isEmpty() )

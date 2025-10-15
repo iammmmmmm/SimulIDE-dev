@@ -38,12 +38,16 @@ void QemuUsart::enable( bool e )
 void QemuUsart::doAction( uint32_t action, uint32_t data )
 {
     switch( action ) {
-        case QUSART_READ:  /*readByte( data );*/ break;
+        case QUSART_READ:  readByte( data );qDebug()<<"read"; break;
         case QUSART_WRITE: sendByte( data ); break;
         case QUSART_BAUD:  setBaudRate( data ); qDebug() << "QemuUsart::doAction Baudrate:"<<data; break;
 
         default: break;
     }
+}
+void QemuUsart::setMcuReadByte( std::function<void(uint8_t)> handler )
+{
+    m_mcuReadByteCallback = handler;
 }
 
 void QemuUsart::bufferEmpty()
@@ -59,7 +63,16 @@ void QemuUsart::frameSent( uint8_t data )
 
 void QemuUsart::readByte( uint8_t )
 {
-    //if( m_mcu->isCpuRead() ) m_mcu->m_regOverride = m_receiver->getData();
+    uint8_t data = m_receiver->getData();
+    if (m_mcuReadByteCallback) {
+        m_mcuReadByteCallback( data);
+    } else {
+        qWarning()<<"QemuUsart::readByte,m_mcuReadByteCallback Not registered,readByte:"<<data;;
+    }
+}
+void QemuUsart::setRxFlags(uint16_t frame) {
+    qDebug()<<"QemuUsart::setRxFlags,frame:"<<frame;
+    readByte(0);
 }
 
 uint8_t QemuUsart::getBit9Tx()

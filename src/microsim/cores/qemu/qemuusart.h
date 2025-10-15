@@ -6,7 +6,7 @@
 #pragma once
 
 #include "usartmodule.h"
-
+#include <functional>
 class QemuDevice;
 
 class QemuUsart : public UsartModule
@@ -27,6 +27,7 @@ class QemuUsart : public UsartModule
         void bufferEmpty() override;
         void frameSent( uint8_t data ) override;
         void readByte( uint8_t data ) override;
+        void setRxFlags( uint16_t frame ) override;
 
         uint8_t getBit9Tx() override;
         void setBit9Rx( uint8_t bit ) override;
@@ -35,6 +36,8 @@ class QemuUsart : public UsartModule
 
         void doAction( uint32_t action, uint32_t data );
 
+        void setMcuReadByte( std::function<void(uint8_t)> handler );
+
     protected:
         int m_number;
 
@@ -42,4 +45,6 @@ class QemuUsart : public UsartModule
 
         regBits_t m_bit9Tx;
         regBits_t m_bit9Rx;
+
+        std::function<void(uint8_t)> m_mcuReadByteCallback;
 };

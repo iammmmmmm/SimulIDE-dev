@@ -119,7 +119,7 @@ uint8_t UartRx::getData()
 
     uint16_t frame = m_fifo[0];
     uint8_t  data = frame & mDATAMASK;
-
+   // qDebug() << "UartRx::getData(): " << data;
     m_fifoP--;
     if( m_fifoSize > 1 && m_fifoP == 0 )             // Advance fifo
     {
