@@ -71,7 +71,7 @@ void QemuUsart::readByte( uint8_t )
     }
 }
 void QemuUsart::setRxFlags(uint16_t frame) {
-    qDebug()<<"QemuUsart::setRxFlags,frame:"<<frame;
+    //qDebug()<<"QemuUsart::setRxFlags,frame:"<<frame;
     readByte(0);
 }
 

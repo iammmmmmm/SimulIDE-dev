@@ -70,10 +70,34 @@ Stm32::Stm32( QString type, QString id )
     m_usart[2].setMcuReadByte([this](uint8_t data) {
        this->usartReadData(data,2);
    });
+
+#ifdef _WIN32
+    int initResult = WSAStartup(MAKEWORD(2, 2), &wsd);
+    if (initResult != 0) {
+        qDebug() << "WSAStartup fail! error code：" << initResult;
+        return;
+    }
+    for (int i = 0; i < 3; ++i) {
+        usart_socket_client[i]=INVALID_SOCKET;
+    }
+#else
+    //TODO Implement the corresponding linux/uinx version
+#endif
+    using FinishedSignal = void (QProcess::*)(int exitCode, QProcess::ExitStatus exitStatus);
+    FinishedSignal finishedSignal = &QProcess::finished;
+    QObject::connect(&m_qemuProcess, finishedSignal,
+    [this](int exitCode, QProcess::ExitStatus exitStatus) {
+        this->onQemuFinished();
+    });
+    QObject::connect(&m_qemuProcess, &QProcess::started,[this]() {
+        this->onQemuStarted();
+    });
 }
 Stm32::~Stm32() {
-    if (m_SockClient != INVALID_SOCKET) {
-        closesocket(m_SockClient);
+    for (const SOCKET s:usart_socket_client) {
+        if (s != INVALID_SOCKET) {
+            closesocket(s);
+        }
     }
     WSACleanup();
 }
@@ -121,9 +145,16 @@ bool Stm32::createArgs()
 
     m_arguments << m_shMemKey;          // Shared Memory key
 
+    QStringList extraArgs = m_extraArgs.split(",");
+
+    if (extraArgs[0].isEmpty()) {
+        extraArgs[0]="24000000";
+    }
+    m_arguments << extraArgs[0];
+    extraArgs.removeAt(0);
+
     m_arguments << "qemu-system-arm";
 
-    QStringList extraArgs = m_extraArgs.split(",");
     for( QString arg : extraArgs )
     {
         if( arg.isEmpty() ) continue;
@@ -247,6 +278,25 @@ uint16_t Stm32::readInputs( uint8_t port )
     //qDebug() << "Stm32::doAction GPIO_IN"<< port << state;
     return state;
 }
+void Stm32::onQemuStarted() {
+    for (int i = 0; i < 3; ++i) {
+        usartSocketInit(i);
+    }
+    //qDebug()<< "Stm32::onQemuStarted";
+}
+void Stm32::onQemuFinished() {
+#ifdef _WIN32
+    for (SOCKET & socket : usart_socket_client) {
+        if (socket != INVALID_SOCKET) {
+            closesocket(socket);
+            socket = INVALID_SOCKET;
+        }
+    }
+#else
+//TODO A linux/uinx version that implements this method
+#endif
+    //qDebug()<< "Stm32::onQemuFinished";
+}
 
 void Stm32::setPortState( std::vector<Stm32Pin*>* port, uint16_t state )
 {
@@ -257,58 +307,68 @@ void Stm32::setPortState( std::vector<Stm32Pin*>* port, uint16_t state )
     }
 }
 void Stm32::usartReadData(uint8_t data,uint8_t index) {
-   //FIXME This method needs to be improved
-    qDebug() << "Stm32::usartReadData"<<data<<"index"<<index;
-    // 检查套接字是否有效且已连接
-    if (m_SockClient == INVALID_SOCKET) {
-        qDebug() << "错误：套接字未连接或无效，无法发送数据。";
-        qDebug() << "Stm32::Stm32 - 正在初始化网络并连接...";
-        int initResult = WSAStartup(MAKEWORD(2, 2), &wsd);
-        if (initResult != 0) {
-            qDebug() << "WSAStartup 失败！错误码：" << initResult;
-            return;
-        }
-        sockaddr_in serverAddr;
-        serverAddr.sin_family = AF_INET;
-        serverAddr.sin_port = htons(4000 + 1);
-        serverAddr.sin_addr.S_un.S_addr = inet_addr("127.0.0.1");
-        m_SockClient = socket(AF_INET, SOCK_STREAM, 0);
-        if (m_SockClient == INVALID_SOCKET) {
-            qDebug() << "Socket 创建失败！错误码：" << WSAGetLastError();
-            WSACleanup();
-            return;
-        }
-        int connectResult = connect(m_SockClient, (sockaddr*)&serverAddr, sizeof(serverAddr));
-        if (connectResult == SOCKET_ERROR) {
-            qDebug() << "Connect 连接失败！错误码：" << WSAGetLastError();
-            closesocket(m_SockClient);
-            m_SockClient = INVALID_SOCKET; // 标记连接无效
-            WSACleanup();
-        } else {
-            qDebug() << "成功连接到服务器: 127.0.0.1:" << (4000 + 1);
-        }
-    }
+    //qDebug() << "Stm32::usartReadData"<<data<<"index"<<index;
 
-    // 1. 准备要发送的数据
-    // 将 uint8_t 变量的地址强制转换为 const char*，并指定长度为 1 字节
+#ifdef _WIN32
+    SOCKET s = INVALID_SOCKET;
+    if (usart_socket_client[index] == INVALID_SOCKET) {
+        usart_socket_client[index]=usartSocketInit(index);
+    }
+    s = usart_socket_client[index];
+    // 1. Prepare data to send
+    // Cast the address of a uint8_t variable to const char* and specify a length of 1 byte
     const char* sendBuf = reinterpret_cast<const char*>(&data);
 
-    // 2. 调用 send 函数发送数据
-    // 注意：我们将要发送的长度固定为 1 字节
-    int bytesSent = send(m_SockClient, sendBuf, 1, 0);
+    // 2. Call the send function to send data
+    // NOTE: We fix the length to be sent to 1 byte
+    int bytesSent = send(s, sendBuf, 1, 0);
 
-    // 3. 检查发送结果
+    // 3. Check sending result
     if (bytesSent == SOCKET_ERROR) {
-        qDebug() << "数据发送失败！错误码：" << WSAGetLastError();
-        // 实际应用中，可以在此尝试重新连接
+        qWarning() << "Data sending failed! Error code:" << WSAGetLastError();
     } else if (bytesSent == 1) {
-        qDebug() << "成功发送 1 个字节。";
+       // qDebug() << "1 byte sent successfully.";
     } else {
-        // TCP 不可能只发送了 0 字节而没有错误，除非连接已关闭
-        qDebug() << "警告：发送了 0 字节，连接可能已关闭。";
-        closesocket(m_SockClient);
-        m_SockClient = INVALID_SOCKET;
+        // TCP It is not possible to send 0 bytes without errors unless the connection is closed
+        qWarning() << "Warning: 0 bytes sent, connection may be closed。";
+        closesocket(s);
+        usart_socket_client[index]=INVALID_SOCKET;
     }
+#else
+//TODO A linux/uinx version that implements this method
+#endif
+}
+SOCKET Stm32::usartSocketInit(uint8_t index) {
+#ifdef _WIN32
+    const SOCKET old_s=usart_socket_client[index];
+    if (old_s!=INVALID_SOCKET) {
+        closesocket(old_s);
+        usart_socket_client[index] = INVALID_SOCKET;
+    }
+    sockaddr_in serverAddr;
+    serverAddr.sin_family = AF_INET;
+    serverAddr.sin_port = htons(4000 + index);
+    serverAddr.sin_addr.S_un.S_addr = inet_addr("127.0.0.1");
+    SOCKET s = socket(AF_INET, SOCK_STREAM, 0);
+    if (s == INVALID_SOCKET) {
+        qWarning() << "usartSocketInit Socket Creation failed! error code：" << WSAGetLastError();
+        WSACleanup();
+    }else {
+        int connectResult = connect(s, reinterpret_cast<sockaddr *>(&serverAddr), sizeof(serverAddr));
+    if (connectResult == SOCKET_ERROR) {
+        qWarning() << "usartSocketInit Connect Connection failed! error code：" << WSAGetLastError();
+        closesocket(s);
+        s = INVALID_SOCKET; // 标记连接无效
+        WSACleanup();
+    } else {
+       // qDebug() << "usartSocketInit Successfully connected to the server: 127.0.0.1:" << (4000 + index);
+        }
+    }
+   usart_socket_client[index]=s;
+   return s;
+#else
+//TODO A linux/uinx version that implements this method
+#endif
 }
 
 void Stm32::cofigPort( uint8_t port,  uint32_t config, uint8_t shift )

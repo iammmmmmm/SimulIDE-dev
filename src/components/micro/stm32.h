@@ -5,12 +5,19 @@
 
 #pragma once
 
+
 #include "qemudevice.h"
 #include "ioport.h"
 #include "qemutwi.h"
 #include "qemuusart.h"
+#include <array>
+
+#ifdef _WIN32
 #include<winsock2.h>
-#pragma comment(lib,"ws2_32.lib")
+#else
+//TODO Implement the corresponding linux/uinx version
+#endif
+
 class LibraryItem;
 class Stm32Pin;
 
@@ -39,7 +46,13 @@ class Stm32 : public QemuDevice
         void setPortState( std::vector<Stm32Pin*>* port, uint16_t state );
 
         void usartReadData(uint8_t data,uint8_t index);
+
+        SOCKET usartSocketInit(uint8_t index);
+
         uint16_t readInputs( uint8_t port );
+
+        void onQemuStarted();
+        void onQemuFinished();
 
         uint64_t m_frequency;
 
@@ -53,6 +66,14 @@ class Stm32 : public QemuDevice
         QemuTwi m_i2c[2];
 
         QemuUsart m_usart[3];
+
+        bool socket_is_need_init=false;
+        QProcess::ProcessState last_state=QProcess::NotRunning;
+#ifdef _WIN32
         WSADATA wsd;
-        SOCKET m_SockClient = INVALID_SOCKET;
+    std::array<SOCKET, 3> usart_socket_client;
+#else
+        //TODO Implement the corresponding linux/uinx version
+#endif
+
 };
