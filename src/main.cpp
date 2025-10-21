@@ -51,10 +51,10 @@ int main( int argc, char *argv[] )
     qInstallMessageHandler( myMessageOutput );
 
 #ifdef _WIN32
-    if (AttachConsole(ATTACH_PARENT_PROCESS)) {
+    AllocConsole();
         freopen("CONOUT$", "w", stdout);
         freopen("CONOUT$", "w", stderr);
-    }
+
 #endif
 
     QApplication app( argc, argv );

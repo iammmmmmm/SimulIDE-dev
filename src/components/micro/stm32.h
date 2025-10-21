@@ -15,7 +15,10 @@
 #ifdef _WIN32
 #include<winsock2.h>
 #else
-//TODO Implement the corresponding linux/uinx version
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <unistd.h>
+#include <errno.h>
 #endif
 
 class LibraryItem;
@@ -71,9 +74,9 @@ class Stm32 : public QemuDevice
         QProcess::ProcessState last_state=QProcess::NotRunning;
 #ifdef _WIN32
         WSADATA wsd;
-    std::array<SOCKET, 3> usart_socket_client;
+        std::array<SOCKET, 3> usart_socket_client;
 #else
-        //TODO Implement the corresponding linux/uinx version
+        std::array<int, 3> usart_socket_client;
 #endif
 
 };

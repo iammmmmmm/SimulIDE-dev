@@ -81,7 +81,9 @@ Stm32::Stm32( QString type, QString id )
         usart_socket_client[i]=INVALID_SOCKET;
     }
 #else
-    //TODO Implement the corresponding linux/uinx version
+    for (int i = 0; i < 3; ++i) {
+        usart_socket_client[i]=0;
+    }
 #endif
     using FinishedSignal = void (QProcess::*)(int exitCode, QProcess::ExitStatus exitStatus);
     FinishedSignal finishedSignal = &QProcess::finished;
@@ -293,7 +295,12 @@ void Stm32::onQemuFinished() {
         }
     }
 #else
-//TODO A linux/uinx version that implements this method
+    for (int & socket : usart_socket_client) {
+        if (socket != -1) {
+            clos(socket);
+            socket = -1;
+        }
+    }
 #endif
     //qDebug()<< "Stm32::onQemuFinished";
 }
@@ -335,7 +342,28 @@ void Stm32::usartReadData(uint8_t data,uint8_t index) {
         usart_socket_client[index]=INVALID_SOCKET;
     }
 #else
-//TODO A linux/uinx version that implements this method
+    int s = -1;
+    if (usart_socket_client[index] == -1) {
+        usart_socket_client[index]=usartSocketInit(index);
+    }
+    s = usart_socket_client[index];
+
+    const char* sendBuf = reinterpret_cast<const char*>(&data);
+
+    int bytesSent = send(s, sendBuf, 1, 0);
+
+    if (bytesSent == -1) {
+        const char *error_message = strerror(errno);
+        qWarning() << "Data sending failed! Error code:" <<error_message;
+    } else if (bytesSent >= 1) {
+        // qDebug() << "1 byte sent successfully.";
+    } else {
+        const char *error_message = strerror(errno);
+        // TCP It is not possible to send 0 bytes without errors unless the connection is closed
+        qWarning() << "Warning: 0 bytes sent, connection may be closed。"<<error_message;
+        close(s);
+        usart_socket_client[index]=-1;
+    }
 #endif
 }
 SOCKET Stm32::usartSocketInit(uint8_t index) {
@@ -352,14 +380,12 @@ SOCKET Stm32::usartSocketInit(uint8_t index) {
     SOCKET s = socket(AF_INET, SOCK_STREAM, 0);
     if (s == INVALID_SOCKET) {
         qWarning() << "usartSocketInit Socket Creation failed! error code：" << WSAGetLastError();
-        WSACleanup();
     }else {
         int connectResult = connect(s, reinterpret_cast<sockaddr *>(&serverAddr), sizeof(serverAddr));
     if (connectResult == SOCKET_ERROR) {
         qWarning() << "usartSocketInit Connect Connection failed! error code：" << WSAGetLastError();
         closesocket(s);
-        s = INVALID_SOCKET; // 标记连接无效
-        WSACleanup();
+        s = INVALID_SOCKET; // Mark connection is invalid
     } else {
        // qDebug() << "usartSocketInit Successfully connected to the server: 127.0.0.1:" << (4000 + index);
         }
@@ -367,7 +393,35 @@ SOCKET Stm32::usartSocketInit(uint8_t index) {
    usart_socket_client[index]=s;
    return s;
 #else
-//TODO A linux/uinx version that implements this method
+    int old_s=usart_socket_client[index];
+    if (old_s!=-1) {
+        close(old_s);
+        usart_socket_client[index]=-1;
+    }
+
+    sockaddr_in serverAddr;
+    serverAddr.sin_family = AF_INET;
+    serverAddr.sin_port = htons(4000+index);
+    serverAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
+    int s = socket(AF_INET, SOCK_STREAM, 0);
+
+    if (s == -1) {
+        const char *error_message = strerror(errno);
+        qWarning() << "usartSocketInit Socket Creation failed! error code：" << error_message;
+    }else {
+        int connectResult = connect(s, (struct sockaddr*)&serverAddr,sizeof(serverAddr));
+        if (connectResult == -1) {
+            const char *error_message = strerror(errno);
+            qWarning() << "usartSocketInit Connect Connection failed! error code：" << error_message;
+            close(s);
+            s = -1;
+        } else {
+            // qDebug() << "usartSocketInit Successfully connected to the server: 127.0.0.1:" << (4000 + index);
+        }
+    }
+
+    usart_socket_client[index]=s;
+    return s;
 #endif
 }
 
