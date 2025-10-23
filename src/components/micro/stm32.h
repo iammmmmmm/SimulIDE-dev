@@ -19,6 +19,8 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include <errno.h>
+#include <arpa/inet.h>
+#define SOCKET int
 #endif
 
 class LibraryItem;
@@ -76,7 +78,7 @@ class Stm32 : public QemuDevice
         WSADATA wsd;
         std::array<SOCKET, 3> usart_socket_client;
 #else
-        std::array<int, 3> usart_socket_client;
+        std::array<SOCKET, 3> usart_socket_client;
 #endif
 
 };

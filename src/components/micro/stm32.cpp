@@ -96,12 +96,22 @@ Stm32::Stm32( QString type, QString id )
     });
 }
 Stm32::~Stm32() {
+
+#ifdef _WIN32
     for (const SOCKET s:usart_socket_client) {
         if (s != INVALID_SOCKET) {
             closesocket(s);
         }
     }
     WSACleanup();
+#else
+    for (int & socket : usart_socket_client) {
+        if (socket != -1) {
+            close(socket);
+            socket = -1;
+        }
+    }
+#endif
 }
 
 void Stm32::stamp()
@@ -147,16 +157,9 @@ bool Stm32::createArgs()
 
     m_arguments << m_shMemKey;          // Shared Memory key
 
-    QStringList extraArgs = m_extraArgs.split(",");
-
-    if (extraArgs[0].isEmpty()) {
-        extraArgs[0]="24000000";
-    }
-    m_arguments << extraArgs[0];
-    extraArgs.removeAt(0);
-
     m_arguments << "qemu-system-arm";
 
+    QStringList extraArgs = m_extraArgs.split(",");
     for( QString arg : extraArgs )
     {
         if( arg.isEmpty() ) continue;
@@ -297,7 +300,7 @@ void Stm32::onQemuFinished() {
 #else
     for (int & socket : usart_socket_client) {
         if (socket != -1) {
-            clos(socket);
+            close(socket);
             socket = -1;
         }
     }
@@ -342,7 +345,7 @@ void Stm32::usartReadData(uint8_t data,uint8_t index) {
         usart_socket_client[index]=INVALID_SOCKET;
     }
 #else
-    int s = -1;
+    SOCKET s = -1;
     if (usart_socket_client[index] == -1) {
         usart_socket_client[index]=usartSocketInit(index);
     }
