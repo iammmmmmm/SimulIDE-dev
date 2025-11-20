@@ -102,14 +102,6 @@ void Stm32::stamp()
 
     QemuDevice::stamp();
 }
-LibraryItem * Stm32::libraryItem() {
-     return new LibraryItem(
-        "STM32F103C8",
-        "STM32",
-        "ic2.png",
-        "STM32F103C8",
-        construct );
-}
 Component * Stm32::construct(QString type, QString id) {
     QString device = Chip::getDevice( id );
     return new Stm32( type, id, device );
