@@ -110,6 +110,7 @@
 #include "st7735.h"
 #include "st7789.h"
 #include "stepper.h"
+#include "stm32.h"
 #include "strain.h"
 #include "subcircuit.h"
 #include "subpackage.h"
@@ -245,7 +246,6 @@ void ItemLibrary::loadItems()
     addItem( Lamp::libraryItem() );
     // Micro
     addItem( new LibraryItem( QObject::tr("Micro"), "", "","Micro", nullptr ) );
-    addItem( QemuDevice::libraryItem() );
     addItem( new LibraryItem("Arduino", "Micro", "board.png", "Arduino", nullptr) );
     addItem( new LibraryItem("AVR"    , "Micro", "ic2.png", "AVR"  , nullptr) );
     addItem( new LibraryItem("PIC"    , "Micro", "ic2.png", "PIC"  , nullptr) );
@@ -253,6 +253,14 @@ void ItemLibrary::loadItems()
     addItem( new LibraryItem("MCS65"  , "Micro", "ic2.png", "MCS65", nullptr) );
     addItem( new LibraryItem("Z80"    , "Micro", "ic2.png", "Z80"  , nullptr) );
     addItem( new LibraryItem("STM32"  , "Micro", "ic2.png", "STM32", nullptr) );
+    // 1. T 封装 (dip36)
+    addItem( new LibraryItem("STM32F103T4", "STM32", "ic2.png", "STM32F103T4", Stm32::construct));
+    // 2. C 封装 (dip48)
+    addItem( new LibraryItem("STM32F103C8", "STM32", "ic2.png", "STM32F103C8", Stm32::construct));
+    // 3. R 封装 (dip64)
+    addItem( new LibraryItem("STM32F103R8", "STM32", "ic2.png", "STM32F103R8", Stm32::construct));
+    // 4. V 封装 (dip100)
+    addItem( new LibraryItem("STM32F103V8", "STM32", "ic2.png", "STM32F103V8", Stm32::construct));
     addItem( new LibraryItem("Espressif", "Micro", "ic2.png", "Espressif", nullptr) );
     addItem( new LibraryItem("Shields", "Micro", "ic2.png", "Shields"  , nullptr) );
 

@@ -243,8 +243,10 @@ void ComponentList::loadXml( QString xmlFile )
 
         QString type = reader.attributes().value("type").toString();
         QString folder = reader.attributes().value("folder").toString();
-        QString compFolder = QFileInfo( xmlFile ).absolutePath()+"/"+folder;
-
+        // 原始代码:
+        // QString compFolder = QFileInfo( xmlFile ).absolutePath()+"/"+folder;
+        // 替换为:
+        QString compFolderBase = QFileInfo( xmlFile ).absolutePath()+"/"+folder;
         while( reader.readNextStartElement() )
         {
             if( reader.name() != "item") continue;
@@ -269,15 +271,16 @@ void ComponentList::loadXml( QString xmlFile )
                         icon = MainWindow::self()->getDataFilePath("images/"+icon);
                 }
                 else icon = getIcon( folder, name );
-
+                // 引入局部变量 compDir，用于当前组件的路径计算
+                QString compDir = compFolderBase;
                 if( type == "Subcircuit" )
                 {
-                    QString nameFolder = compFolder+"/"+name;
-
+                    // QString nameFolder = compFolder+"/"+name;
+                    QString nameFolder = compDir+"/"+name;
                     if( !QFile::exists( nameFolder+".sim2" )
-                     && !QFile::exists( nameFolder+".sim1" ) ) compFolder = nameFolder;
+                     && !QFile::exists( nameFolder+".sim1" ) ) compDir = nameFolder;
                 }
-                m_dirFileList[ name ] = compFolder;
+                m_dirFileList[ name ] = compDir;
                 m_dataFileList[ name ] = xmlFile;   // Save xml File used to create this item
                 if( reader.attributes().hasAttribute("info") )
                     name += "???"+reader.attributes().value("info").toString();

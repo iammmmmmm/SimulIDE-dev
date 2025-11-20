@@ -8,6 +8,8 @@
 #include <QFileInfo>
 
 #include "stm32.h"
+
+#include "itemlibrary.h"
 #include "stm32pin.h"
 #include "qemutwi.h"
 #include "stm32spi.h"
@@ -41,7 +43,7 @@ Stm32::Stm32( QString type, QString id, QString device )
     case 3: m_packageFile = "stm32_dip100.package"; break; // V
     //case 4: m_packageFile = "stm32_dip144.package"; break; // Z
 
-    default: m_packageFile = "stm32_dip64.package";  break;
+    default: m_packageFile = "stm32_dip36.package";  break;
     }
 
     QStringList vars = { "4", "6", "8", "B", "C", "D", "E", "F", "G" };
@@ -99,6 +101,18 @@ void Stm32::stamp()
     if( m_usartN > 4 ) m_usarts[4]->setPins({m_ports[2].at(12), m_ports[3].at(2) });
 
     QemuDevice::stamp();
+}
+LibraryItem * Stm32::libraryItem() {
+     return new LibraryItem(
+        "STM32F103C8",
+        "STM32",
+        "ic2.png",
+        "STM32F103C8",
+        construct );
+}
+Component * Stm32::construct(QString type, QString id) {
+    QString device = Chip::getDevice( id );
+    return new Stm32( type, id, device );
 }
 
 void Stm32::createPins()

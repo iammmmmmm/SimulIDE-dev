@@ -60,7 +60,7 @@ Component* SubCircuit::construct( QString type, QString id )
         s_subcDir = ComponentList::self()->getFileDir( device );
         if( !s_subcDir.isEmpty() ) subcFile = s_subcDir+"/"+device+".sim2";
         if( !QFileInfo::exists( subcFile ) ) subcFile = s_subcDir+"/"+device+".sim1";
-
+        qDebug()<<"s_subcDir"<<subcFile;
         subcData = s_globalDevices.value( device ); // Check if data already stored
     }
 

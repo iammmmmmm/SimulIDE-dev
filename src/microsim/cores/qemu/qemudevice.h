@@ -90,7 +90,7 @@ class QemuDevice : public Chip
 
         volatile qemuArena_t* m_arena;
 
-        int m_gpioSize;
+        int m_gpioSize{};
         std::vector<IoPin*> m_ioPin;
         IoPin* m_rstPin;
 
@@ -102,11 +102,11 @@ class QemuDevice : public Chip
         QProcess m_qemuProcess;
         QStringList m_arguments;
 
-        uint8_t m_portN;
-        uint8_t m_usartN;
+        uint8_t m_portN{};
+        uint8_t m_usartN{};
         //uint8_t m_timerN;
-        uint8_t m_i2cN;
-        uint8_t m_spiN;
+        uint8_t m_i2cN{};
+        uint8_t m_spiN{};
 
         std::vector<QemuTwi*> m_i2cs;
         std::vector<QemuSpi*> m_spis;

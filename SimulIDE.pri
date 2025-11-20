@@ -124,8 +124,8 @@ contains( QMAKE_HOST.arch, arm64|aarch64 ) | contains( QMAKE_CC, .*aarch64.* ){
 }
 
 contains( QMAKE_HOST.os, Windows ) {
-    REV_NO = $$system("powershell -Command get-date -format yy-MM-dd")     # year-month-day
-    BUILD_DATE = $$system("powershell -Command get-date -format dd-MM-yy") # day-month-year
+    REV_NO = "2025-11-18"    # year-month-day
+    BUILD_DATE = "2025-11-18" # day-month-year
 }
 else {
     REV_NO = $$system($(which date) +\"\\\"%y%m%d\\\"\")

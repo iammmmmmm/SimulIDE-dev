@@ -19,7 +19,8 @@ class Stm32 : public QemuDevice
         ~Stm32();
 
         void stamp() override;
-
+        static LibraryItem* libraryItem();
+        static Component* construct( QString type, QString id );
     protected:
         Pin* addPin( QString id, QString type, QString label,
                     int n, int x, int y, int angle , int length=8, int space=0 ) override;

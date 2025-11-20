@@ -61,7 +61,7 @@ LibraryItem* QemuDevice::libraryItem()
 {
     return new LibraryItem(
         "QemuDevice",
-        "",
+        "Micro",
         "ic2.png",
         "QemuDevice",
         QemuDevice::construct );
