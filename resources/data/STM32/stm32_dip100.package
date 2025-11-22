@@ -1,0 +1,109 @@
+<packageB name="STM32F103VE" width="30" height="30" background="" type="None" logic_symbol="false" >
+
+    <pin type="nc"  xpos="16"   ypos="-8"   angle="90"  length="8"  space="0"   id="vdd0" label="Vdd" />
+    <pin type="nc"  xpos="24"   ypos="-8"   angle="90"  length="8"  space="0"   id="vss0" label="Vss" />
+    <pin type=""    xpos="32"   ypos="-8"   angle="90"  length="8"  space="0"   id="PE00" label="PE00"/>
+    <pin type=""    xpos="40"   ypos="-8"   angle="90"  length="8"  space="0"   id="PE01" label="PE01"/>
+    <pin type=""    xpos="48"   ypos="-8"   angle="90"  length="8"  space="0"   id="PE02" label="PE02"/>
+    <pin type=""    xpos="56"   ypos="-8"   angle="90"  length="8"  space="0"   id="PE03" label="PE03"/>
+    <pin type=""    xpos="64"   ypos="-8"   angle="90"  length="8"  space="0"   id="PE04" label="PE04"/>
+    <pin type=""    xpos="72"   ypos="-8"   angle="90"  length="8"  space="0"   id="PE05" label="PE05"/>
+    <pin type=""    xpos="80"   ypos="-8"   angle="90"  length="8"  space="0"   id="PE06" label="PE06"/>
+    <pin type=""    xpos="88"   ypos="-8"   angle="90"  length="8"  space="0"   id="PC13" label="PC13"/>
+    <pin type=""    xpos="96"   ypos="-8"   angle="90"  length="8"  space="0"   id="PC14" label="PC14"/>
+    <pin type=""    xpos="104"  ypos="-8"   angle="90"  length="8"  space="0"   id="PC15" label="PC15"/>
+    <pin type=""    xpos="112"  ypos="-8"   angle="90"  length="8"  space="0"   id="PF00" label="PF00"/>
+    <pin type=""    xpos="120"  ypos="-8"   angle="90"  length="8"  space="0"   id="PF01" label="PF01"/>
+    <pin type=""    xpos="128"  ypos="-8"   angle="90"  length="8"  space="0"   id="PF02" label="PF02"/>
+    <pin type=""    xpos="136"  ypos="-8"   angle="90"  length="8"  space="0"   id="PF03" label="PF03"/>
+    <pin type=""    xpos="144"  ypos="-8"   angle="90"  length="8"  space="0"   id="PF04" label="PF04"/>
+    <pin type=""    xpos="152"  ypos="-8"   angle="90"  length="8"  space="0"   id="PF05" label="PF05"/>
+    <pin type="nc"  xpos="160"  ypos="-8"   angle="90"  length="8"  space="0"   id="BOO"  label="BOOT0" />
+    <pin type=""    xpos="168"  ypos="-8"   angle="90"  length="8"  space="0"   id="PB09" label="PB09"/>
+    <pin type=""    xpos="176"  ypos="-8"   angle="90"  length="8"  space="0"   id="PB08" label="PB08"/>
+    <pin type=""    xpos="184"  ypos="-8"   angle="90"  length="8"  space="0"   id="PB07" label="PB07"/>
+    <pin type=""    xpos="192"  ypos="-8"   angle="90"  length="8"  space="0"   id="PB06" label="PB06"/>
+    <pin type=""    xpos="200"  ypos="-8"   angle="90"  length="8"  space="0"   id="PB05" label="PB05"/>
+    <pin type=""    xpos="208"  ypos="-8"   angle="90"  length="8"  space="0"   id="PB04" label="PB04"/>
+
+
+    <pin type="nc"  xpos="248"  ypos="16"   angle="0"   length="8"  space="0"   id="vdd1" label="Vdd" />
+    <pin type="nc"  xpos="248"  ypos="24"   angle="0"   length="8"  space="0"   id="vss1" label="Vss" />
+    <pin type=""    xpos="248"  ypos="32"   angle="0"   length="8"  space="0"   id="PA15" label="PA15"/>
+    <pin type=""    xpos="248"  ypos="40"   angle="0"   length="8"  space="0"   id="PA14" label="PA14"/>
+    <pin type=""    xpos="248"  ypos="48"   angle="0"   length="8"  space="0"   id="PA13" label="PA13"/>
+    <pin type=""    xpos="248"  ypos="56"   angle="0"   length="8"  space="0"   id="PA12" label="PA12"/>
+    <pin type=""    xpos="248"  ypos="64"   angle="0"   length="8"  space="0"   id="PA11" label="PA11"/>
+    <pin type=""    xpos="248"  ypos="72"   angle="0"   length="8"  space="0"   id="PA10" label="PA10"/>
+    <pin type=""    xpos="248"  ypos="80"   angle="0"   length="8"  space="0"   id="PA09" label="PA09"/>
+    <pin type=""    xpos="248"  ypos="88"   angle="0"   length="8"  space="0"   id="PA08" label="PA08"/>
+    <pin type=""    xpos="248"  ypos="96"   angle="0"   length="8"  space="0"   id="PC09" label="PC09"/>
+    <pin type=""    xpos="248"  ypos="104"  angle="0"   length="8"  space="0"   id="PC08" label="PC08"/>
+    <pin type=""    xpos="248"  ypos="112"  angle="0"   length="8"  space="0"   id="PC07" label="PC07"/>
+    <pin type=""    xpos="248"  ypos="120"  angle="0"   length="8"  space="0"   id="PC06" label="PC06"/>
+    <pin type=""    xpos="248"  ypos="128"  angle="0"   length="8"  space="0"   id="PD15" label="PD15"/>
+    <pin type=""    xpos="248"  ypos="136"  angle="0"   length="8"  space="0"   id="PD14" label="PD14"/>
+    <pin type=""    xpos="248"  ypos="144"  angle="0"   length="8"  space="0"   id="PD13" label="PD13"/>
+    <pin type=""    xpos="248"  ypos="152"  angle="0"   length="8"  space="0"   id="PD12" label="PD12"/>
+    <pin type=""    xpos="248"  ypos="160"  angle="0"   length="8"  space="0"   id="PD11" label="PD11"/>
+    <pin type=""    xpos="248"  ypos="168"  angle="0"   length="8"  space="0"   id="PD10" label="PD10"/>
+    <pin type=""    xpos="248"  ypos="176"  angle="0"   length="8"  space="0"   id="PD09" label="PD09"/>
+    <pin type=""    xpos="248"  ypos="184"  angle="0"   length="8"  space="0"   id="PD08" label="PD08"/>
+    <pin type=""    xpos="248"  ypos="192"  angle="0"   length="8"  space="0"   id="PB15" label="PB15"/>
+    <pin type=""    xpos="248"  ypos="200"  angle="0"   length="8"  space="0"   id="PB14" label="PB14"/>
+    <pin type=""    xpos="248"  ypos="208"  angle="0"   length="8"  space="0"   id="PB13" label="PB13"/>
+
+    <pin type="nc"  xpos="208"  ypos="248"  angle="270" length="8"  space="0"   id="vdd2" label="Vdd" />
+    <pin type="nc"  xpos="200"  ypos="248"  angle="270" length="8"  space="0"   id="vss"  label="Vss" />
+    <pin type=""    xpos="192"  ypos="248"  angle="270" length="8"  space="0"   id="PB12" label="PB12"/>
+    <pin type=""    xpos="184"  ypos="248"  angle="270" length="8"  space="0"   id="PB11" label="PB11"/>
+    <pin type=""    xpos="176"  ypos="248"  angle="270" length="8"  space="0"   id="PB10" label="PB10"/>
+    <pin type=""    xpos="168"  ypos="248"  angle="270" length="8"  space="0"   id="PE07" label="PE07"/>
+    <pin type=""    xpos="160"  ypos="248"  angle="270" length="8"  space="0"   id="PE08" label="PE08"/>
+    <pin type=""    xpos="152"  ypos="248"  angle="270" length="8"  space="0"   id="PE09" label="PE09"/>
+    <pin type=""    xpos="144"  ypos="248"  angle="270" length="8"  space="0"   id="PE10" label="PE10"/>
+    <pin type=""    xpos="136"  ypos="248"  angle="270" length="8"  space="0"   id="PE11" label="PE11"/>
+    <pin type=""    xpos="128"  ypos="248"  angle="270" length="8"  space="0"   id="PE12" label="PE12"/>
+    <pin type=""    xpos="120"  ypos="248"  angle="270" length="8"  space="0"   id="PE13" label="PE13"/>
+    <pin type=""    xpos="112"  ypos="248"  angle="270" length="8"  space="0"   id="PE14" label="PE14"/>
+    <pin type=""    xpos="104"  ypos="248"  angle="270" length="8"  space="0"   id="PE15" label="PE15"/>
+    <pin type=""    xpos="96"   ypos="248"  angle="270" length="8"  space="0"   id="PB02" label="PB02"/>
+    <pin type=""    xpos="88"   ypos="248"  angle="270" length="8"  space="0"   id="PB01" label="PB01"/>
+    <pin type=""    xpos="80"   ypos="248"  angle="270" length="8"  space="0"   id="PB00" label="PB00"/>
+    <pin type=""    xpos="72"   ypos="248"  angle="270" length="8"  space="0"   id="PD07" label="PD07"/>
+    <pin type=""    xpos="64"   ypos="248"  angle="270" length="8"  space="0"   id="PD06" label="PD06"/>
+    <pin type=""    xpos="56"   ypos="248"  angle="270" length="8"  space="0"   id="PD05" label="PD05"/>
+    <pin type=""    xpos="48"   ypos="248"  angle="270" length="8"  space="0"   id="PD04" label="PD04"/>
+    <pin type=""    xpos="40"   ypos="248"  angle="270" length="8"  space="0"   id="PD03" label="PD03"/>
+    <pin type=""    xpos="32"   ypos="248"  angle="270" length="8"  space="0"   id="PD02" label="PD02"/>
+    <pin type="nc"  xpos="24"   ypos="248"  angle="270" length="8"  space="0"   id="vss3" label="Vss" />
+    <pin type="nc"  xpos="16"   ypos="248"  angle="270" length="8"  space="0"   id="vdd3" label="Vdd" />
+
+
+    <pin type=""    xpos="-8"   ypos="208"  angle="180" length="8"  space="0"   id="PC05" label="PC05"/>
+    <pin type=""    xpos="-8"   ypos="200"  angle="180" length="8"  space="0"   id="PC04" label="PC04"/>
+    <pin type=""    xpos="-8"   ypos="192"  angle="180" length="8"  space="0"   id="PA07" label="PA07"/>
+    <pin type=""    xpos="-8"   ypos="184"  angle="180" length="8"  space="0"   id="PA06" label="PA06"/>
+    <pin type=""    xpos="-8"   ypos="176"  angle="180" length="8"  space="0"   id="PA05" label="PA05"/>
+    <pin type=""    xpos="-8"   ypos="168"  angle="180" length="8"  space="0"   id="PA04" label="PA04"/>
+    <pin type=""    xpos="-8"   ypos="160"  angle="180" length="8"  space="0"   id="PA03" label="PA03"/>
+    <pin type=""    xpos="-8"   ypos="152"  angle="180" length="8"  space="0"   id="PA02" label="PA02"/>
+    <pin type=""    xpos="-8"   ypos="144"  angle="180" length="8"  space="0"   id="PA01" label="PA01"/>
+    <pin type=""    xpos="-8"   ypos="136"  angle="180" length="8"  space="0"   id="PA00" label="PA00"/>
+    <pin type="nc"  xpos="-8"   ypos="128"  angle="180" length="8"  space="0"   id="vdda" label="Vdda"/>
+    <pin type="nc"  xpos="-8"   ypos="120"  angle="180" length="8"  space="0"   id="vssa" label="Vssa"/>
+    <pin type=""    xpos="-8"   ypos="112"  angle="180" length="8"  space="0"   id="PC03" label="PC03"/>
+    <pin type=""    xpos="-8"   ypos="104"  angle="180" length="8"  space="0"   id="PC02" label="PC02"/>
+    <pin type=""    xpos="-8"   ypos="96"   angle="180" length="8"  space="0"   id="PC01" label="PC01"/>
+    <pin type=""    xpos="-8"   ypos="88"   angle="180" length="8"  space="0"   id="PC00" label="PC00"/>
+    <pin type="rst" xpos="-8"   ypos="80"   angle="180" length="8"  space="0"   id="nrst" label="Nrst"/>
+    <pin type=""    xpos="-8"   ypos="72"   angle="180" length="8"  space="0"   id="PD01" label="PD01"/>
+    <pin type=""    xpos="-8"   ypos="64"   angle="180" length="8"  space="0"   id="PD00" label="PD00"/>
+    <pin type=""    xpos="-8"   ypos="56"   angle="180" length="8"  space="0"   id="PB03" label="PB03"/>
+    <pin type=""    xpos="-8"   ypos="48"   angle="180" length="8"  space="0"   id="PB02" label="PB02"/>
+    <pin type=""    xpos="-8"   ypos="40"   angle="180" length="8"  space="0"   id="PB01" label="PB01"/>
+    <pin type=""    xpos="-8"   ypos="32"   angle="180" length="8"  space="0"   id="PB00" label="PB00"/>
+    <pin type=""    xpos="-8"   ypos="24"   angle="180" length="8"  space="0"   id="PG00" label="PG00"/>
+    <pin type="nc"  xpos="-8"   ypos="16"   angle="180" length="8"  space="0"   id="vbat" label="Vbat"/>
+
+</packageB>

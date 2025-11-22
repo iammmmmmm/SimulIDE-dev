@@ -1,0 +1,43 @@
+<packageB name="STM32F103T4" width="15" height="15" background="" type="None" logic_symbol="false" >
+
+    <pin type="nc"  xpos="16"   ypos="-8"   angle="90"  length="8"  space="0"   id="vdd0" label="Vdd" />
+    <pin type="nc"  xpos="24"   ypos="-8"   angle="90"  length="8"  space="0"   id="vss0" label="Vss" />
+    <pin type=""    xpos="32"   ypos="-8"   angle="90"  length="8"  space="0"   id="PB09" label="PB09"/>
+    <pin type=""    xpos="40"   ypos="-8"   angle="90"  length="8"  space="0"   id="PB08" label="PB08"/>
+    <pin type="nc"  xpos="48"   ypos="-8"   angle="90"  length="8"  space="0"   id="BOO"  label="BOOT0" />
+    <pin type=""    xpos="56"   ypos="-8"   angle="90"  length="8"  space="0"   id="PB07" label="PB07"/>
+    <pin type=""    xpos="64"   ypos="-8"   angle="90"  length="8"  space="0"   id="PB06" label="PB06"/>
+    <pin type=""    xpos="72"   ypos="-8"   angle="90"  length="8"  space="0"   id="PA15" label="PA15"/>
+    <pin type=""    xpos="80"   ypos="-8"   angle="90"  length="8"  space="0"   id="PA14" label="PA14"/>
+    
+    <pin type="nc"  xpos="128"  ypos="16"   angle="0"   length="8"  space="0"   id="vdd1" label="Vdd" />
+    <pin type="nc"  xpos="128"  ypos="24"   angle="0"   length="8"  space="0"   id="vss1" label="Vss" />
+    <pin type=""    xpos="128"  ypos="32"   angle="0"   length="8"  space="0"   id="PA13" label="PA13"/>
+    <pin type=""    xpos="128"  ypos="40"   angle="0"   length="8"  space="0"   id="PA12" label="PA12"/>
+    <pin type=""    xpos="128"  ypos="48"   angle="0"   length="8"  space="0"   id="PA11" label="PA11"/>
+    <pin type=""    xpos="128"  ypos="56"   angle="0"   length="8"  space="0"   id="PA10" label="PA10"/>
+    <pin type=""    xpos="128"  ypos="64"   angle="0"   length="8"  space="0"   id="PA09" label="PA09"/>
+    <pin type=""    xpos="128"  ypos="72"   angle="0"   length="8"  space="0"   id="PA08" label="PA08"/>
+    <pin type=""    xpos="128"  ypos="80"   angle="0"   length="8"  space="0"   id="PB15" label="PB15"/>
+
+    <pin type="nc"  xpos="80"   ypos="128"  angle="270" length="8"  space="0"   id="vdd2" label="Vdd" />
+    <pin type="nc"  xpos="72"   ypos="128"  angle="270" length="8"  space="0"   id="vss"  label="Vss" />
+    <pin type=""    xpos="64"   ypos="128"  angle="270" length="8"  space="0"   id="PB11" label="PB11"/>
+    <pin type=""    xpos="56"   ypos="128"  angle="270" length="8"  space="0"   id="PB10" label="PB10"/>
+    <pin type=""    xpos="48"   ypos="128"  angle="270" length="8"  space="0"   id="PA07" label="PA07"/>
+    <pin type=""    xpos="40"   ypos="128"  angle="270" length="8"  space="0"   id="PA06" label="PA06"/>
+    <pin type=""    xpos="32"   ypos="128"  angle="270" length="8"  space="0"   id="PA05" label="PA05"/>
+    <pin type=""    xpos="24"   ypos="128"  angle="270" length="8"  space="0"   id="PA04" label="PA04"/>
+    <pin type=""    xpos="16"   ypos="128"  angle="270" length="8"  space="0"   id="PA03" label="PA03"/>
+    
+    <pin type=""    xpos="-8"   ypos="104"  angle="180" length="8"  space="0"   id="PA02" label="PA02"/>
+    <pin type="nc"  xpos="-8"   ypos="96"   angle="180" length="8"  space="0"   id="vbat" label="Vbat"/>
+    <pin type=""    xpos="-8"   ypos="88"   angle="180" length="8"  space="0"   id="PC13" label="PC13"/>
+    <pin type=""    xpos="-8"   ypos="80"   angle="180" length="8"  space="0"   id="PC14" label="PC14"/>
+    <pin type=""    xpos="-8"   ypos="72"   angle="180" length="8"  space="0"   id="PC15" label="PC15"/>
+    <pin type="rst" xpos="-8"   ypos="64"   angle="180" length="8"  space="0"   id="nrst" label="Nrst"/>
+    <pin type="nc"  xpos="-8"   ypos="56"   angle="180" length="8"  space="0"   id="vssa" label="Vssa"/>
+    <pin type="nc"  xpos="-8"   ypos="48"   angle="180" length="8"  space="0"   id="vdda" label="Vdda"/>
+    <pin type=""    xpos="-8"   ypos="40"   angle="180" length="8"  space="0"   id="PA00" label="PA00"/>
+    
+</packageB>
