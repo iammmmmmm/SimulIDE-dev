@@ -7,6 +7,7 @@
 
 #include "qemudevice.h"
 #include "ioport.h"
+#include "Rcm.h"
 
 class Stm32Pin;
 
@@ -21,6 +22,7 @@ class Stm32 : public QemuDevice
         void stamp() override;
         static LibraryItem* libraryItem();
         static Component* construct( QString type, QString id );
+        void runToTime( uint64_t time ) override;
     protected:
         Pin* addPin( QString id, QString type, QString label,
                     int n, int x, int y, int angle , int length=8, int space=0 ) override;
@@ -59,4 +61,7 @@ class Stm32 : public QemuDevice
         //std::vector<Stm32Pin*> m_portE;
 
         uint32_t m_model;
+        bool registerPeripheral() override;
+        std::unique_ptr<Rcm> rcm;
+        bool hook_code(uc_engine *uc, uint64_t address, uint32_t size, void *user_data) override;
 };

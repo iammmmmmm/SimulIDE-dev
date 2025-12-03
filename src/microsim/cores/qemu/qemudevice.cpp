@@ -10,10 +10,13 @@
 #include <QMessageBox>
 #include <QSignalMapper>
 #include <QDir>
-
+#include <memory>
 #include <stdlib.h>
 #include <fcntl.h>
+#include <fstream>
 #include <unistd.h>
+
+#include "peripheral_factory.h"
 #ifdef __linux__
 #include <sys/mman.h>
 #include <sys/shm.h>
@@ -72,52 +75,6 @@ QemuDevice::QemuDevice( QString type, QString id )
 {
     m_pSelf = this;
     m_rstPin = nullptr;
-
-    uint64_t pid = QCoreApplication::applicationPid();
-    m_shMemKey = QString::number( pid )+id;
-    void* arena = nullptr;
-
-    const int shMemSize = sizeof( qemuArena_t );
-
-    // create the shared memory object
-#ifdef __linux__
-    const char* charMemKey = m_shMemKey.toLocal8Bit().data();
-    m_shMemId = shm_open( charMemKey, O_CREAT | O_RDWR, 0666);
-    if( m_shMemId != -1 )
-    {
-        ftruncate( m_shMemId, shMemSize );
-        arena = mmap( 0, shMemSize, PROT_WRITE, MAP_SHARED, m_shMemId, 0 );
-    }
-#elif defined(_WIN32)
-    const wchar_t* charMemKey = m_shMemKey.toStdWString().c_str();
-    // Create a file mapping object
-    HANDLE hMapFile = CreateFileMapping(
-        INVALID_HANDLE_VALUE, // Use paging file
-        NULL,                 // Default security
-        PAGE_READWRITE,       // Read/write access
-        0,                    // Maximum object size (high-order DWORD)
-        shMemSize,            // Maximum object size (low-order DWORD)
-        charMemKey );         // Name of the mapping object
-
-    if( hMapFile != NULL )
-        arena = MapViewOfFile( hMapFile, FILE_MAP_ALL_ACCESS, 0, 0, shMemSize );
-
-    m_wHandle = hMapFile;
-#endif
-    if( arena )
-    {
-        m_arena = (qemuArena_t*)arena;
-        qDebug() << "QemuDevice::QemuDevice Shared Mem created" << shMemSize << "bytes";
-    }else{
-        m_arena = nullptr;
-        m_shMemId = -1;
-        qDebug() << "QemuDevice::QemuDevice Error creating arena";
-    }
-
-    m_qemuProcess.setProcessChannelMode( /*QProcess::MergedChannels*/ QProcess::ForwardedChannels ); // Merge stdout and stderr
-
-    //Simulator::self()->addToUpdateList( this );
-
     addPropGroup( { tr("Main"),{
         new StrProp<QemuDevice>("Program", tr("Firmware"),""
                                , this, &QemuDevice::firmware, &QemuDevice::setFirmware ),
@@ -125,86 +82,50 @@ QemuDevice::QemuDevice( QString type, QString id )
         new StrProp<QemuDevice>("Args", tr("Extra arguments"),""
                                , this, &QemuDevice::extraArgs, &QemuDevice::setExtraArgs )
     }, 0 } );
+    unicorn_emulator_ptr=std::unique_ptr<UnicornEmulator>(new UnicornEmulator(arch,mode));
+
 }
 QemuDevice::~QemuDevice()
 {
-    initialize();
-#ifdef __linux__
-    if( m_shMemId != -1 ) shm_unlink( m_shMemKey.toLocal8Bit().data() );
-#elif defined(_WIN32)
-    if( m_wHandle != NULL )
-    {
-        UnmapViewOfFile( (LPVOID)m_arena );
-        CloseHandle( (HANDLE)m_wHandle );
-    }
-#endif
-    m_pSelf = nullptr;
+
 }
 
 void QemuDevice::initialize()
 {
-    if( m_shMemId == -1 ) return;
-
-    m_arena->running = 0;
-
-    m_qemuProcess.waitForFinished( 500 );
-    if( m_qemuProcess.state() != QProcess::NotRunning )
-    {
-        m_qemuProcess.kill();
-        qDebug() << "QemuDevice: Qemu proccess killed";
-    }
-    else qDebug() << "QemuDevice: Qemu proccess finished";
-    //updateStep();
+     target_instr_count=0;
+     target_instr_begin=0;
+     last_target_time=0;
+     target_time=0;
 }
 
 void QemuDevice::stamp()
 {
-    if( m_shMemId == -1 ) return;
-
-    m_arena->simuTime = 0;
-    m_arena->qemuTime = 0;
-    m_arena->data32 = 0;
-    m_arena->mask32 = 0;
-    m_arena->data16 = 0;
-    m_arena->mask16 = 0;
-    m_arena->data8  = 0;
-    m_arena->mask8  = 0;
-    m_arena->simuAction = 0;
-    m_arena->qemuAction = 0;
-    m_arena->ps_per_inst = 0;
-    m_arena->running = 0;
-
-    for( IoPin* pin : m_ioPin ) // Qemu calls us to read input
-    {
-        if( !pin ) continue;
-        pin->setOutState( false );
-        pin->setPinMode( input );
+    unicorn_emulator_ptr=std::unique_ptr<UnicornEmulator>(new UnicornEmulator(arch,mode));
+    uc_err = uc_mem_map(unicorn_emulator_ptr->get(), FLASH_START, FLASH_SIZE, UC_PROT_READ | UC_PROT_EXEC);
+    uc_err=uc_mem_map(unicorn_emulator_ptr->get(), SRAM_START, SRAM_SIZE, UC_PROT_READ | UC_PROT_WRITE | UC_PROT_EXEC);
+    uc_err=uc_mem_map(unicorn_emulator_ptr->get(), ROM_START, ROM_SIZE, UC_PROT_READ | UC_PROT_EXEC);
+    uc_err=uc_mem_map(unicorn_emulator_ptr->get(),PERIPHERAL_START,PERIPHERAL_MAP_SIZE,UC_PROT_READ | UC_PROT_WRITE);
+    uc_err=uc_mem_map(unicorn_emulator_ptr->get(), PPB_START, PPB_SIZE, UC_PROT_READ | UC_PROT_WRITE);
+    if (uc_err) {
+        qWarning() <<"uc map err；"<<uc_strerror(uc_err);
+        return;
     }
-    if( m_rstPin ) m_rstPin->changeCallBack( this );
-
-    if( createArgs() )
-    {
-        QString executable = m_executable;
-#ifdef _WIN32
-        executable += ".exe";
-#endif
-        if( !QFileInfo::exists( executable ) )
-        {
-            qDebug() << "Error: QemuDevice::stamp executable does not exist:" << endl << executable;
-        }
-        m_qemuProcess.start( executable, m_arguments );
-
-        uint64_t timeout = 0;
-        while( !m_arena->running )   // Wait for Qemu running
-        {
-            if( timeout++ > 5e9 ) // Don't wait forever
-            {
-                qDebug() << "Error: QemuDevice::stamp timeout";
-                m_qemuProcess.kill();
-                return;
-            }
-        }
-        qDebug() << "QemuDevice::stamp started";
+    peripheral_registry = std::make_unique<PeripheralRegistry>();
+    if (!registerPeripheral()) {
+        qWarning() <<"registerPeripheral err"<< Qt::endl;
+        return;
+    }
+    set_hooks();
+    if (!loadFirmware()) {
+        qWarning() <<"loadFirmware err"<< Qt::endl;
+        return;
+    }
+   const uint64_t start_pc=getStartPc();
+    if (start_pc) {
+        qDebug()<<"uc emu start!"<< Qt::endl;
+        target_instr_begin=start_pc;
+    }else {
+        qWarning() <<"start_pc err；"<<uc_strerror(uc_err)<< Qt::endl;
     }
 }
 
@@ -241,24 +162,48 @@ void QemuDevice::voltChanged()
 
 void QemuDevice::runToTime( uint64_t time )
 {
-    if( this->eventTime ) return;// Our event still not executed
-    //if( m_arena->qemuTime ) return; // Our event still not executed
-    //if( m_arena->simuTime ) return; // Our event still not executed
+    // if( this->eventTime ) return;// Our event still not executed
+    // //if( m_arena->qemuTime ) return; // Our event still not executed
+    // //if( m_arena->simuTime ) return; // Our event still not executed
+    //
+    // //qDebug() << "\nQemuDevice::runToTime"<< time;
+    //
+    // m_arena->simuTime = 0;
+    // m_arena->qemuTime = time; // Tell Qemu to run up to time
+    // //m_arena->qemuAction = SIM_EVENT;
+    //
+    // while( m_arena->simuTime == 0 ) { ; } // Wait for Qemu action  //   Simulator::self()->simState() == SIM_RUNNING )
+    //
+    // uint64_t eventTime = m_arena->simuTime - Simulator::self()->circTime();
+    // //if( m_arena->action < SIM_EVENT )
+    // Simulator::self()->addEvent( eventTime, this );
+    // //qDebug() << "QemuDevice::runToTime event"<< m_arena->simuTime;
 
-    //qDebug() << "\nQemuDevice::runToTime"<< time;
+    // uc_err = uc_emu_start(unicorn_emulator_ptr->get(), target_instr_begin, FLASH_END, 0, 0);
 
-    m_arena->simuTime = 0;
-    m_arena->qemuTime = time; // Tell Qemu to run up to time
-    //m_arena->qemuAction = SIM_EVENT;
-
-    while( m_arena->simuTime == 0 ) { ; } // Wait for Qemu action  //   Simulator::self()->simState() == SIM_RUNNING )
-
-    uint64_t eventTime = m_arena->simuTime - Simulator::self()->circTime();
-    //if( m_arena->action < SIM_EVENT )
-    Simulator::self()->addEvent( eventTime, this );
-    //qDebug() << "QemuDevice::runToTime event"<< m_arena->simuTime;
 }
+uint64_t QemuDevice::calculateInstructionsToExecute(uint64_t target_time_ps,uint64_t current_time_ps,double ps_per_inst) {
+    if (target_time_ps <= current_time_ps) {
+        return 0;
+    }
+    uint64_t delta_time_ps = target_time_ps - current_time_ps;
+    if (ps_per_inst <= 0.0) {
+        qWarning() << "ps_per_inst is zero or negative! Cannot calculate instruction count."<<Qt::endl;
+        return 0;
+    }
 
+    const double instructions_double = static_cast<double>(delta_time_ps) / ps_per_inst;
+    const auto instructions_count = static_cast<uint64_t>(instructions_double);
+
+    // 为了确保至少运行一步，如果时间差非零但结果为0，可以返回1。
+    // 但通常在模拟中，让浮点数计算精确到0即可。
+    return instructions_count;
+}
+uint64_t QemuDevice::getCurrentPc() const {
+    uint64_t current_pc = 0;
+    uc_reg_read(unicorn_emulator_ptr->get(), UC_ARM_REG_PC, &current_pc);
+    return current_pc;
+}
 void QemuDevice::runEvent()
 {
     //qDebug() << "QemuDevice::runEvent"<< m_arena->simuAction<< Simulator::self()->circTime();
@@ -307,7 +252,7 @@ void QemuDevice::setPackageFile( QString package )
 {
     if( !QFile::exists( package ) )
     {
-        qDebug() <<"File does not exist:"<< package;
+        qDebug() <<"File does not exist:"<< package<< Qt::endl;
         return;
     }
     QString pkgText = fileToString( package, "QemuDevice::setPackageFile");
@@ -352,4 +297,122 @@ void QemuDevice::contextMenu( QGraphicsSceneContextMenuEvent* event, QMenu* menu
     }
     menu->addSeparator();
     Component::contextMenu( event, menu );
+}
+void QemuDevice::set_hooks() {
+    uc_hook hh_mem_write;
+    uc_hook hh_code;
+    uc_hook hh_mem_unmap;
+   uc_err = uc_hook_add(
+       unicorn_emulator_ptr->get(),
+       &hh_mem_write,
+       UC_HOOK_MEM_READ|UC_HOOK_MEM_WRITE,
+       reinterpret_cast<void*>(hook_mem_wr_wappler),
+       static_cast<void*>(this),
+       PERIPHERAL_START,
+       PERIPHERAL_END);
+    uc_err = uc_hook_add(
+           unicorn_emulator_ptr->get(),
+           &hh_code,
+           UC_HOOK_CODE,
+           reinterpret_cast<void*>(hook_code_wappler),
+           static_cast<void*>(this),
+           FLASH_START,
+           FLASH_END);
+    uc_err = uc_hook_add(
+           unicorn_emulator_ptr->get(),
+           &hh_mem_unmap,
+           UC_HOOK_MEM_READ_UNMAPPED | UC_HOOK_MEM_WRITE_UNMAPPED |UC_HOOK_MEM_FETCH_UNMAPPED,
+           reinterpret_cast<void*>(hook_mem_unmapped_wappler),
+           static_cast<void*>(this),
+           0,
+           0xFFFFFFFF);
+    if (uc_err) {
+        qWarning() << "QemuDevice::set_hooks(): uc_err=" <<uc_strerror(uc_err)<< Qt::endl;
+    }
+}
+void QemuDevice::hook_mem_wr(uc_engine *uc,uc_mem_type type,uint64_t address,int size,int64_t value,void *user_data) {
+    //qDebug()<<"QemuDevice::hook_mem_wr";
+    QemuDevice* device = static_cast<QemuDevice*>(user_data);
+    if (address>=device->PERIPHERAL_START&&address<=device->PERIPHERAL_END) {
+        PeripheralDevice *peripheral = peripheral_registry->findDevice(address);
+        if (peripheral) {
+            if (type==UC_MEM_WRITE) {
+                peripheral->handle_write(uc,address,size,value);
+            }else {
+                peripheral->handle_read(uc,address,size,&value);
+            }
+        }else {
+    qWarning() << "QemuDevice::hook_mem_wr(): peripheral not found, address: 0x" << Qt::hex << address << Qt::endl;
+        }
+    }
+}
+bool QemuDevice::hook_code(uc_engine *uc, uint64_t address, uint32_t size, void *user_data) {
+  //  qDebug() << "QemuDevice::hook_code(): address=" << Qt::hex << address << Qt::endl;
+    auto* device = static_cast<QemuDevice*>(user_data);
+
+    return true;
+}
+bool QemuDevice::hook_mem_unmapped(uc_engine *uc,uc_mem_type type,uint64_t address,int size,int64_t value,void *user_data) {
+    uint32_t current_pc;
+    uc_reg_read(uc, UC_ARM_REG_PC, &current_pc);
+    qWarning() << "QemuDevice::hook_mem_unmapped(): current_pc=" << current_pc<< Qt::endl;
+    //也许我们需要做一些事情？
+    return false;
+}
+bool QemuDevice::registerPeripheral() {
+    qWarning() << "QemuDevice::registerPeripheral() must def by son !!!!!!!!!!!!!!!!!!!!"<< Qt::endl;
+    return false;
+}
+bool QemuDevice::loadFirmware() {
+    std::ifstream file(m_firmware.toStdString(), std::ios::binary | std::ios::ate);
+    if (!file.is_open()) {
+        qWarning() << " ERROR UNABLE TO OPEN FIRMWARE FILE" << m_firmware<< Qt::endl;
+        file.close();
+        return false;
+    }
+
+    std::streamsize size = file.tellg();
+    file.seekg(0, std::ios::beg);
+    std::vector<uint8_t> buffer(size);
+
+    if (file.read(reinterpret_cast<char *>(buffer.data()), size)) {
+        qDebug() << "Successfully read firmware, size；" << size << " byte。"<< Qt::endl;
+
+        uc_err = uc_mem_write(unicorn_emulator_ptr->get(), FLASH_START, buffer.data(), size);
+        uc_err = uc_mem_write(unicorn_emulator_ptr->get(), ROM_START, buffer.data(), size);
+        if (uc_err) {
+            qWarning() << "failed to write firmware to mem error : " <<uc_strerror( uc_err);
+            file.close();
+            return false;
+        }
+    } else {
+        qWarning() << "Error: An error occurred while reading the file。"<< Qt::endl;
+        uc_close(unicorn_emulator_ptr->get());
+        file.close();
+        return false;
+    }
+    file.close();
+    return true;
+}
+uint64_t QemuDevice::getStartPc() {
+    uint32_t sp_val, pc_val;
+    uint64_t start_pc;
+    uc_err = uc_mem_read(unicorn_emulator_ptr->get(), FLASH_START, &sp_val, sizeof(sp_val));
+    if (uc_err == UC_ERR_OK) {
+        uc_reg_write(unicorn_emulator_ptr->get(), UC_ARM_REG_SP, &sp_val);
+        qDebug( "the initial sp is set to:%x", sp_val) ;
+    } else {
+        qWarning() << "failed to read sp initial value error code: " << uc_strerror(uc_err) << Qt::endl;
+        return false;
+    }
+    uc_err = uc_mem_read(unicorn_emulator_ptr->get(), FLASH_START + 4, &pc_val, sizeof(pc_val));
+    if (uc_err == UC_ERR_OK) {
+        // start_pc = (FLASH_START + pc_val) | 1; //NOTE 这里很怪，apm32f003x系列使用这个也可以启动，使用下面哪个都能启动
+        start_pc = pc_val | 1;
+        qDebug("the initial pc setup is: %x" ,static_cast<unsigned>(start_pc));
+    } else {
+        qWarning()<<"Failed to read PC initial value. Error code； "<<uc_err<< Qt::endl;
+        return false;
+    }
+    return start_pc;
 }

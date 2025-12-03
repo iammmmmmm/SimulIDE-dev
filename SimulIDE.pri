@@ -18,6 +18,8 @@ TRANSLATIONS = $$files( $$PWD/resources/translations/*.ts )
 FORMS       += $$files( $$PWD/src/*.ui, true )
 RESOURCES    = $$PWD/src/application.qrc
 
+UNICORN_ROOT_PATH = E:/Projects/qemu_for_apm32/unicorn/
+
 INCLUDEPATH += $$PWD/src \
     $$PWD/src/components \
     $$PWD/src/components/active \
@@ -78,7 +80,8 @@ INCLUDEPATH += $$PWD/src \
     $$PWD/src/microsim/modules/script\
     $$PWD/src/angel/include \
     $$PWD/src/angel/JIT \
-    $$PWD/src/angel/src
+    $$PWD/src/angel/src \
+    $$UNICORN_ROOT_PATH/include
 
 QMAKE_CXXFLAGS += -Wno-unused-parameter
 QMAKE_CXXFLAGS += -Wno-deprecated-declarations
@@ -95,6 +98,8 @@ QMAKE_CXXFLAGS_DEBUG -= -O2
 QMAKE_CXXFLAGS_DEBUG -= -O3
 QMAKE_CXXFLAGS_DEBUG += -O0
 
+LIBS += -L$$UNICORN_ROOT_PATH/lib
+LIBS += -lunicorn
 LIBS += -lz
 
 win32 {
@@ -135,7 +140,7 @@ else {
 CONFIG += qt 
 CONFIG += warn_on
 CONFIG += no_qml_debug
-CONFIG *= c++11
+CONFIG *= c++14
 
 DEFINES += REVNO=\\\"$$REV_NO\\\"
 DEFINES += APP_VERSION=\\\"$$VERSION-$$RELEASE\\\"

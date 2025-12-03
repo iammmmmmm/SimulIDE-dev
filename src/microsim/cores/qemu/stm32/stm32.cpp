@@ -10,8 +10,10 @@
 #include "stm32.h"
 
 #include "itemlibrary.h"
+#include "peripheral_factory.h"
 #include "stm32pin.h"
 #include "qemutwi.h"
+#include "Rcm.h"
 #include "stm32spi.h"
 #include "stm32usart.h"
 
@@ -61,11 +63,29 @@ Stm32::Stm32( QString type, QString id, QString device )
         default: break;
     }
 
+    //TODO set Flash and sram size,and HSI_FREQ,HSE_FREQ,MAX_CPU_FREQ
+
+     FLASH_SIZE  = (32 * 1024);
+     SRAM_SIZE   = (20 * 1024);
+     ROM_SIZE  = (32 * 1024);
+
+     SYS_MEM_START = 0x00020000;
+     SYS_MEM_SIZE  = (1 * 1024);
+
+     PERIPHERAL_START    = 0x40000000;
+     PERIPHERAL_END      = 0x40023000;
+
+     PPB_START = 0xE0000000;
+
+     target_instr_count=0;
+     target_instr_begin=0;
+     target_instr_end=0;
+
     uint32_t fam = model.left(1).toInt();
 
     m_model = fam << 16 | pkg << 8 | var;
     //qDebug() << "Stm32::Stm32 model" << device << m_model;
-    m_executable = "./data/STM32/qemu-system-arm";
+
 
     m_firmware ="";
 
@@ -106,6 +126,31 @@ Component * Stm32::construct(QString type, QString id) {
     QString device = Chip::getDevice( id );
     return new Stm32( type, id, device );
 }
+void Stm32::runToTime(uint64_t time) {
+    auto rcm_ = dynamic_cast<Rcm*>(peripheral_registry->findDevice(RCM_BASE));
+    if (rcm_) {
+        uint64_t sys_freq = rcm_->getSysClockFrequency();
+        double ps_per_inst;
+        if (sys_freq > 0) {
+            // 10^12 是 1 秒的皮秒数
+            ps_per_inst = 1e12 / (double)sys_freq;
+        } else {
+            //TODO here need do somethings ?
+            ps_per_inst = 125000.0;
+        }
+        target_instr_count = calculateInstructionsToExecute(time, last_target_time, ps_per_inst);
+        uc_err = uc_emu_start(unicorn_emulator_ptr->get(), target_instr_begin, 0, 0, target_instr_count);
+        if (uc_err != UC_ERR_OK) {
+            //FIXME: TODO somthings
+            qWarning()<<"void Stm32::runToTime(uint64_t time) uc err"<<uc_strerror(uc_err)<<Qt::endl;
+        }
+        qDebug()<<"run to "<<time<<" "<<uc_strerror(uc_err)<<Qt::endl;
+        last_target_time = time;
+        target_instr_begin=getCurrentPc();
+    } else {
+        qWarning() << "Rcm peripheral not found for instruction calculation.";
+    }
+}
 
 void Stm32::createPins()
 {
@@ -130,52 +175,52 @@ void Stm32::createPort( std::vector<Stm32Pin*>* port, uint8_t number, QString pI
 
 bool Stm32::createArgs()
 {
-    //QFileInfo fi = QFileInfo( m_firmware );
-
-    /*if( fi.size() != 1048576 )
-    {
-        qDebug() << "Error firmware file size:" << fi.size() << "must be 1048576";
-        return false;
-    }*/
-    m_arena->data32 = m_model;
-
-    m_arguments.clear();
-
-    m_arguments << m_shMemKey;          // Shared Memory key
-
-    m_arguments << "qemu-system-arm";
-
-    QStringList extraArgs = m_extraArgs.split(",");
-    for( QString arg : extraArgs )
-    {
-        if( arg.isEmpty() ) continue;
-        m_arguments << arg;
-    }
-
-    //m_arguments << "-d";
-    //m_arguments << "in_asm";
-
-    //m_arguments << "-machine";
-    //m_arguments << "help";
-
-    m_arguments << "-M";
-    m_arguments << "stm32-f10xxx-simul";
-
-    m_arguments << "-drive";
-    m_arguments << "file="+m_firmware+",if=pflash,format=raw";
-
-    //m_arguments << "-accel";
-    //m_arguments << "tcg,tb-size=100";
-
-    //m_arguments << "-rtc";
-    //m_arguments <<"clock=vm";
-
-    m_arguments << "-icount";
-    m_arguments <<"shift=14,align=off,sleep=off";
-
-    //m_arguments << "-kernel";
-    //m_arguments << m_firmware;
-
+    // //QFileInfo fi = QFileInfo( m_firmware );
+    //
+    // /*if( fi.size() != 1048576 )
+    // {
+    //     qDebug() << "Error firmware file size:" << fi.size() << "must be 1048576";
+    //     return false;
+    // }*/
+    // m_arena->data32 = m_model;
+    //
+    // m_arguments.clear();
+    //
+    // m_arguments << m_shMemKey;          // Shared Memory key
+    //
+    // m_arguments << "qemu-system-arm";
+    //
+    // QStringList extraArgs = m_extraArgs.split(",");
+    // for( QString arg : extraArgs )
+    // {
+    //     if( arg.isEmpty() ) continue;
+    //     m_arguments << arg;
+    // }
+    //
+    // //m_arguments << "-d";
+    // //m_arguments << "in_asm";
+    //
+    // //m_arguments << "-machine";
+    // //m_arguments << "help";
+    //
+    // m_arguments << "-M";
+    // m_arguments << "stm32-f10xxx-simul";
+    //
+    // m_arguments << "-drive";
+    // m_arguments << "file="+m_firmware+",if=pflash,format=raw";
+    //
+    // //m_arguments << "-accel";
+    // //m_arguments << "tcg,tb-size=100";
+    //
+    // //m_arguments << "-rtc";
+    // //m_arguments <<"clock=vm";
+    //
+    // m_arguments << "-icount";
+    // m_arguments <<"shift=14,align=off,sleep=off";
+    //
+    // //m_arguments << "-kernel";
+    // //m_arguments << m_firmware;
+    //
     return true;
 }
 
@@ -311,6 +356,28 @@ uint16_t Stm32::readInputs( uint8_t port )
     //qDebug() << "Stm32::doAction GPIO_IN"<< port << state;
     return state;
 }
+bool Stm32::registerPeripheral() {
+    rcm = std::make_unique<Rcm>();
+    peripheral_registry->registerDevice(std::move(rcm));
+    return true;
+}
+bool Stm32::hook_code(uc_engine *uc, uint64_t address, uint32_t size, void *user_data) {
+    const auto stm32_instance = static_cast<Stm32*>(user_data);
+    const auto rcm_device = dynamic_cast<Rcm*>(stm32_instance->peripheral_registry->findDevice(RCM_BASE));
+    if (rcm_device != nullptr) {
+        rcm_device->run_tick(uc, address, size, user_data);
+    }
+
+
+   // qDebug() << "Stm32::hook_code debug out "<<Qt::endl;
+    return QemuDevice::hook_code( uc, address, size, user_data );
+}
+// bool hook_code(uc_engine *uc, uint64_t address, uint32_t size, void *user_data) {
+//     QemuDevice::hook_code( uc,  address,  size,  user_data);
+//     auto thisptr = static_cast<Stm32*>(user_data);
+//     thisptr->rcm->run_tick( uc,  address,  size,  user_data);
+//     return true;
+// }
 
 void Stm32::setPortState( uint8_t port, uint16_t state )
 {

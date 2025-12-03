@@ -6,9 +6,11 @@
 #pragma once
 
 #include <QProcess>
-
+#include <QDebug>
 #include "chip.h"
-
+#include "unicorn/unicorn.h"
+#include "peripheral_factory.h"
+class UnicornEmulator;
 typedef struct qemuArena{
     uint64_t simuTime;    // in ps
     uint64_t qemuTime;    // in ps
@@ -62,7 +64,7 @@ class QemuDevice : public Chip
 
         volatile qemuArena_t* getArena() { return m_arena; }
 
-        void runToTime( uint64_t time );
+        virtual void runToTime( uint64_t time );
 
         void slotLoad();
         void slotReload();
@@ -111,4 +113,110 @@ class QemuDevice : public Chip
         std::vector<QemuTwi*> m_i2cs;
         std::vector<QemuSpi*> m_spis;
         std::vector<QemuUsart*> m_usarts;
+
+        std::unique_ptr<UnicornEmulator> unicorn_emulator_ptr;
+        uc_err uc_err;
+        uc_arch arch = UC_ARCH_ARM;
+        uc_mode mode = UC_MODE_THUMB;
+        std::unique_ptr<PeripheralRegistry> peripheral_registry;
+        //The following variables must be set to the correct value before map
+        uint64_t FLASH_START = 0x08000000;
+        uint64_t FLASH_SIZE  = (32 * 1024);
+        #define FLASH_END  (FLASH_START + FLASH_SIZE)
+
+        uint64_t SRAM_START  = 0x20000000;
+        uint64_t SRAM_SIZE   = (4 * 1024);
+
+        uint64_t SYS_MEM_START = 0x00020000;
+        uint64_t SYS_MEM_SIZE  = (1 * 1024);
+
+        uint64_t ROM_START = 0x00000000;
+        # define ROM_SIZE  FLASH_SIZE
+
+        uint64_t PERIPHERAL_START    = 0x40000000;
+        uint64_t PERIPHERAL_END      = 0x400114FF;
+        # define PERIPHERAL_MAP_SIZE (PERIPHERAL_END - PERIPHERAL_START)
+
+        uint64_t PPB_START = 0xE0000000;
+        uint64_t PPB_SIZE  = 0x100000;
+
+        uint64_t target_instr_count=0;
+        uint64_t target_instr_begin=0;
+        //uint64_t target_instr_end=0;
+        uint64_t last_target_time=0;
+        uint64_t target_time=0;
+
+
+        void set_hooks();
+        void hook_mem_wr(uc_engine *uc,uc_mem_type type,uint64_t address,int size,int64_t value,void *user_data);
+        static  void hook_mem_wr_wappler
+        (uc_engine *uc,uc_mem_type type,uint64_t address,int size,int64_t value,void *user_data) {
+            auto qemudevice = static_cast<QemuDevice*>(user_data);
+            qemudevice->hook_mem_wr(uc,type,address,size,value,user_data);
+        };
+        virtual bool hook_code(uc_engine *uc, uint64_t address, uint32_t size, void *user_data);
+        static  bool hook_code_wappler(uc_engine *uc, uint64_t address, uint32_t size, void *user_data) {
+            auto qemudevice = static_cast<QemuDevice*>(user_data);
+            return qemudevice->hook_code(uc,address,size,user_data);
+        }
+        bool hook_mem_unmapped(uc_engine *uc,uc_mem_type type,uint64_t address,int size,int64_t value,void *user_data);
+        static  bool hook_mem_unmapped_wappler(uc_engine *uc,uc_mem_type type,uint64_t address,int size,int64_t value,void *user_data) {
+            auto qemudevice = static_cast<QemuDevice*>(user_data);
+            return qemudevice->hook_mem_unmapped(uc,type,address,size,value,user_data);
+        }
+        //ask son register peripheral by this
+        virtual bool registerPeripheral();
+        bool loadFirmware();
+        uint64_t getStartPc();
+        /**
+ * @brief 计算在给定的时间内需要执行的指令数。
+ * * @param target_time_ps 目标时间点 (单位：皮秒 ps)
+ * @param current_time_ps 当前时间点 (单位：皮秒 ps)
+ * @param ps_per_inst 每条指令执行所需的皮秒数
+ * @return uint64_t 需要执行的指令数
+ */
+        static uint64_t calculateInstructionsToExecute(uint64_t target_time_ps, uint64_t current_time_ps, double ps_per_inst);
+        uint64_t getCurrentPc() const;
+};
+
+#include <stdexcept>
+#include <string>
+
+/**
+ * @brief 使用 RAII 封装 Unicorn Engine 句柄 (uc_engine*)。
+ * * 利用构造函数获取资源 (uc_open)，析构函数释放资源 (uc_close)，
+ * 确保即使在异常发生时也能安全清理。
+ */
+class UnicornEmulator {
+public:
+    UnicornEmulator(uc_arch arch, uc_mode mode) {
+        uc_err err = uc_open(arch, mode, &uc_);
+        if (err != UC_ERR_OK) {
+            std::string msg = "Error opening Unicorn Engine: ";
+            msg += uc_strerror(err);
+
+            throw std::runtime_error(msg);
+        }
+    }
+    ~UnicornEmulator() {
+        if (uc_ != nullptr) {
+            uc_close(uc_);
+            uc_ = nullptr; //
+        }
+    }
+    /**
+     * @brief Get the underlying uc_engine* pointer.
+     * @return A valid uc_engine* handle.
+     */
+    uc_engine* get() const {
+        if (uc_ == nullptr) {
+             throw std::runtime_error("Attempted to access uninitialized or closed Unicorn engine.");
+        }
+        return uc_;
+    }
+        UnicornEmulator(const UnicornEmulator&) = delete;
+    UnicornEmulator& operator=(const UnicornEmulator&) = delete;
+
+private:
+    uc_engine* uc_ = nullptr;
 };

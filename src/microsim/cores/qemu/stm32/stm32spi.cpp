@@ -62,7 +62,7 @@ void Stm32Spi::doAction()
         }break;
         case STM32_SPI_CR2:
         {
-            uint16_t newCR2 = m_arena->data32;
+            // uint16_t newCR2 = m_arena->data32;
 
             // Bit 0 RXDMAEN: Rx buffer DMA enable
             // Bit 1 TXDMAEN: Tx buffer DMA enable
