@@ -127,6 +127,9 @@ typedef struct {
   volatile uint32_t BDCTRL;       /**< 0x20: 备份域控制寄存器 (RCM_BDCTRL) */
   volatile uint32_t CSTS;         /**< 0x24: 控制/状态寄存器 (RCM_CSTS) */
 } RCM_TypeDef;
+uint64_t HSI_FREQ = 8000000; // 8MHz
+uint64_t HSE_FREQ = 8000000; // 8MHz (外部晶振)
+uint64_t MAX_CPU_FREQ = 96000000; // 96MHz
 class Rcm : public PeripheralDevice {
   private:
     RCM_TypeDef m_registers{};
@@ -155,8 +158,6 @@ class Rcm : public PeripheralDevice {
     void run_tick(uc_engine *uc, uint64_t address, uint32_t size, void *user_data);
     uint64_t getSysClockFrequency() const;
 
-     uint64_t HSI_FREQ = 8000000; // 8MHz
-     uint64_t HSE_FREQ = 8000000; // 8MHz (外部晶振)
-     uint64_t MAX_CPU_FREQ = 96000000; // 96MHz
+
 
 };

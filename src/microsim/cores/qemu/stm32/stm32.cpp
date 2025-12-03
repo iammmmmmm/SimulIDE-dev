@@ -79,7 +79,13 @@ Stm32::Stm32( QString type, QString id, QString device )
 
      target_instr_count=0;
      target_instr_begin=0;
-     target_instr_end=0;
+    //uint64_t target_instr_end=0;
+     last_target_time=0;
+     target_time=0;
+
+     HSI_FREQ = 8000000; // 8MHz
+     HSE_FREQ = 8000000; // 8MHz (外部晶振)
+     MAX_CPU_FREQ = 96000000; // 96MHz
 
     uint32_t fam = model.left(1).toInt();
 
@@ -171,57 +177,6 @@ void Stm32::createPort( std::vector<Stm32Pin*>* port, uint8_t number, QString pI
         port->emplace_back( pin );
         pin->setVisible( false );
     }
-}
-
-bool Stm32::createArgs()
-{
-    // //QFileInfo fi = QFileInfo( m_firmware );
-    //
-    // /*if( fi.size() != 1048576 )
-    // {
-    //     qDebug() << "Error firmware file size:" << fi.size() << "must be 1048576";
-    //     return false;
-    // }*/
-    // m_arena->data32 = m_model;
-    //
-    // m_arguments.clear();
-    //
-    // m_arguments << m_shMemKey;          // Shared Memory key
-    //
-    // m_arguments << "qemu-system-arm";
-    //
-    // QStringList extraArgs = m_extraArgs.split(",");
-    // for( QString arg : extraArgs )
-    // {
-    //     if( arg.isEmpty() ) continue;
-    //     m_arguments << arg;
-    // }
-    //
-    // //m_arguments << "-d";
-    // //m_arguments << "in_asm";
-    //
-    // //m_arguments << "-machine";
-    // //m_arguments << "help";
-    //
-    // m_arguments << "-M";
-    // m_arguments << "stm32-f10xxx-simul";
-    //
-    // m_arguments << "-drive";
-    // m_arguments << "file="+m_firmware+",if=pflash,format=raw";
-    //
-    // //m_arguments << "-accel";
-    // //m_arguments << "tcg,tb-size=100";
-    //
-    // //m_arguments << "-rtc";
-    // //m_arguments <<"clock=vm";
-    //
-    // m_arguments << "-icount";
-    // m_arguments <<"shift=14,align=off,sleep=off";
-    //
-    // //m_arguments << "-kernel";
-    // //m_arguments << m_firmware;
-    //
-    return true;
 }
 
 void Stm32::doAction()
