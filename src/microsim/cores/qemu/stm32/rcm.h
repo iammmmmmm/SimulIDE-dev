@@ -34,7 +34,7 @@
 
 // --- RCM_CTRL (0x00) ---
 // 可写掩码: HSIEN, HSITRM, HSEEN, HSEBCFG, CSSEN, PLLEN
-#define RCM_CTRL_W_MASK     ((uint32_t)0x011C00BF)
+#define RCM_CTRL_W_MASK     ((uint32_t)0x011C00BD)
 // 可读掩码: HSIEN, HSIRDYFLG, HSITRM, HSICAL, HSEEN, HSERDYFLG, HSEBCFG, CSSEN, PLLEN, PLLRDYFLG
 #define RCM_CTRL_R_MASK     ((uint32_t)0x031CFFBF)
 // 写 1 清除标志位掩码 (无)
@@ -127,23 +127,26 @@ typedef struct {
   volatile uint32_t BDCTRL;       /**< 0x20: 备份域控制寄存器 (RCM_BDCTRL) */
   volatile uint32_t CSTS;         /**< 0x24: 控制/状态寄存器 (RCM_CSTS) */
 } RCM_TypeDef;
-uint64_t HSI_FREQ = 8000000; // 8MHz
-uint64_t HSE_FREQ = 8000000; // 8MHz (外部晶振)
-uint64_t MAX_CPU_FREQ = 96000000; // 96MHz
 class Rcm : public PeripheralDevice {
   private:
     RCM_TypeDef m_registers{};
     void initialize_registers();
     // Status: Number of wait cycles required for the analog clock to start
-    uint64_t m_pll_wait_cycles = 0;
-    const uint64_t CLOCK_DELAY = 0;
+    struct {
+      uint64_t hse_start_tick = 0; // HSE 启动时的 CPU 周期计数
+      uint64_t pll_start_tick = 0; // PLL 启动时的 CPU 周期计数
+      const uint64_t HSE_DELAY_TICKS = 1000; // 假设 HSE 需要
+      const uint64_t PLL_DELAY_TICKS = 750;  // 假设 PLL 需要
+      uint64_t rcm_ticks = 0;
+    } m_clock_timing;
 
   public:
+    Rcm(uint64_t hsi_freq,uint64_t hse_freq,uint64_t max_cpu_freq);
     Rcm();
-    bool handle_write(uc_engine *uc, uint64_t address, int size, int64_t value) override;
-    bool handle_read(uc_engine *uc, uint64_t address, int size, int64_t *read_value) override;
+    bool handle_write(uc_engine *uc, uint64_t address, int size, int64_t value, void *user_data) override;
+    bool handle_read(uc_engine *uc, uint64_t address, int size, int64_t *read_value, void *user_data) override;
     uint64_t getBaseAddress() override { return RCM_BASE; }
-    std::string getName() override { return "CMU (Rcm)"; }
+    std::string getName() override { return "CMU (rcm)"; }
     uint64_t getSize() override {return RCM_END-RCM_BASE;}
     // 外设行为查询接口
     bool is_ahb_clock_enabled(uint32_t bit_mask) const {
@@ -158,6 +161,8 @@ class Rcm : public PeripheralDevice {
     void run_tick(uc_engine *uc, uint64_t address, uint32_t size, void *user_data);
     uint64_t getSysClockFrequency() const;
 
-
-
+     uint64_t HSI_FREQ = 8000000; // 8MHz
+     uint64_t HSE_FREQ = 8000000; // 8MHz (外部晶振)
+     uint64_t MAX_CPU_FREQ = 96000000; // 96MHz
+  void runEvent() override;
 };

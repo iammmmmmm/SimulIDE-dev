@@ -3,12 +3,12 @@
 #include <qlogging.h>
 
 //TODO need more code to do more things
-bool PeripheralDevice::handle_write(uc_engine *uc, uint64_t address, int size, int64_t value) {
+bool PeripheralDevice::handle_write(uc_engine *uc, uint64_t address, int size, int64_t value, void *user_data) {
   qWarning("Unprocessed operation to base class virtual function, address:%x",static_cast<unsigned>(address));
   return true;
 }
 
-bool PeripheralDevice::handle_read(uc_engine *uc, uint64_t address, int size, int64_t *read_value) {
+bool PeripheralDevice::handle_read(uc_engine *uc, uint64_t address, int size, int64_t *read_value, void *user_data) {
   qWarning("Unprocessed operation to base class virtual function, address:%x",static_cast<unsigned>(address));
   if (read_value) {
     *read_value = 0;

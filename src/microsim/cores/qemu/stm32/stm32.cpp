@@ -8,15 +8,19 @@
 #include <QFileInfo>
 
 #include "stm32.h"
+#include <memory>
 
+#include "Afio.h"
 #include "itemlibrary.h"
 #include "peripheral_factory.h"
 #include "stm32pin.h"
 #include "qemutwi.h"
-#include "Rcm.h"
+#include "rcm.h"
 #include "stm32spi.h"
 #include "stm32usart.h"
-
+#include "gpio.h"
+#include "fmc.h"
+#include "simulator.h"
 #define tr(str) simulideTr("Stm32",str)
 
 enum armActions{
@@ -65,8 +69,8 @@ Stm32::Stm32( QString type, QString id, QString device )
 
     //TODO set Flash and sram size,and HSI_FREQ,HSE_FREQ,MAX_CPU_FREQ
 
-     FLASH_SIZE  = (32 * 1024);
-     SRAM_SIZE   = (20 * 1024);
+     FLASH_SIZE  = (256 * 1024);
+     SRAM_SIZE   = (64 * 1024);
      ROM_SIZE  = (32 * 1024);
 
      SYS_MEM_START = 0x00020000;
@@ -82,11 +86,6 @@ Stm32::Stm32( QString type, QString id, QString device )
     //uint64_t target_instr_end=0;
      last_target_time=0;
      target_time=0;
-
-     HSI_FREQ = 8000000; // 8MHz
-     HSE_FREQ = 8000000; // 8MHz (外部晶振)
-     MAX_CPU_FREQ = 96000000; // 96MHz
-
     uint32_t fam = model.left(1).toInt();
 
     m_model = fam << 16 | pkg << 8 | var;
@@ -148,13 +147,15 @@ void Stm32::runToTime(uint64_t time) {
         uc_err = uc_emu_start(unicorn_emulator_ptr->get(), target_instr_begin, 0, 0, target_instr_count);
         if (uc_err != UC_ERR_OK) {
             //FIXME: TODO somthings
-            qWarning()<<"void Stm32::runToTime(uint64_t time) uc err"<<uc_strerror(uc_err)<<Qt::endl;
+            qWarning()<<"void Stm32::runToTime(uint64_t time) uc err"<<uc_strerror(uc_err)<<"pc:"<<Qt::hex<<getCurrentPc()<<Qt::endl;
+
+            Simulator::self()->stopSim();
         }
         qDebug()<<"run to "<<time<<" "<<uc_strerror(uc_err)<<Qt::endl;
         last_target_time = time;
         target_instr_begin=getCurrentPc();
     } else {
-        qWarning() << "Rcm peripheral not found for instruction calculation.";
+        qWarning() << "rcm peripheral not found for instruction calculation.";
     }
 }
 
@@ -312,19 +313,21 @@ uint16_t Stm32::readInputs( uint8_t port )
     return state;
 }
 bool Stm32::registerPeripheral() {
-    rcm = std::make_unique<Rcm>();
-    peripheral_registry->registerDevice(std::move(rcm));
+    peripheral_registry->registerDevice(std::make_unique<Rcm>());
+    peripheral_registry->registerDevice(std::make_unique<Fmc>());
+    peripheral_registry->registerDevice(std::make_unique<Afio>());
+    peripheral_registry->registerDevice(std::make_unique<Gpio>(GPIOA_BASE,"Port A"));
+    peripheral_registry->registerDevice(std::make_unique<Gpio>(GPIOB_BASE,"Port B"));
+    peripheral_registry->registerDevice(std::make_unique<Gpio>(GPIOC_BASE,"Port C"));
+    peripheral_registry->registerDevice(std::make_unique<Gpio>(GPIOD_BASE,"Port D"));
+    peripheral_registry->registerDevice(std::make_unique<Gpio>(GPIOE_BASE,"Port E"));
     return true;
 }
 bool Stm32::hook_code(uc_engine *uc, uint64_t address, uint32_t size, void *user_data) {
     const auto stm32_instance = static_cast<Stm32*>(user_data);
     const auto rcm_device = dynamic_cast<Rcm*>(stm32_instance->peripheral_registry->findDevice(RCM_BASE));
-    if (rcm_device != nullptr) {
-        rcm_device->run_tick(uc, address, size, user_data);
-    }
-
-
-   // qDebug() << "Stm32::hook_code debug out "<<Qt::endl;
+    rcm_device->run_tick(uc, address, size, user_data);
+   //qDebug() << "Stm32::hook_code debug out "<<Qt::endl;
     return QemuDevice::hook_code( uc, address, size, user_data );
 }
 // bool hook_code(uc_engine *uc, uint64_t address, uint32_t size, void *user_data) {

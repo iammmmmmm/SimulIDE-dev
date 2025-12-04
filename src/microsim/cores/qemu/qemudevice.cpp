@@ -11,7 +11,7 @@
 #include <QSignalMapper>
 #include <QDir>
 #include <memory>
-#include <stdlib.h>
+#include <cstdlib>
 #include <fcntl.h>
 #include <fstream>
 #include <unistd.h>
@@ -337,9 +337,9 @@ void QemuDevice::hook_mem_wr(uc_engine *uc,uc_mem_type type,uint64_t address,int
         PeripheralDevice *peripheral = peripheral_registry->findDevice(address);
         if (peripheral) {
             if (type==UC_MEM_WRITE) {
-                peripheral->handle_write(uc,address,size,value);
+                peripheral->handle_write(uc,address,size,value, user_data);
             }else {
-                peripheral->handle_read(uc,address,size,&value);
+                peripheral->handle_read(uc,address,size,&value, user_data);
             }
         }else {
     qWarning() << "QemuDevice::hook_mem_wr(): peripheral not found, address: 0x" << Qt::hex << address << Qt::endl;
@@ -355,7 +355,7 @@ bool QemuDevice::hook_code(uc_engine *uc, uint64_t address, uint32_t size, void 
 bool QemuDevice::hook_mem_unmapped(uc_engine *uc,uc_mem_type type,uint64_t address,int size,int64_t value,void *user_data) {
     uint32_t current_pc;
     uc_reg_read(uc, UC_ARM_REG_PC, &current_pc);
-    qWarning() << "QemuDevice::hook_mem_unmapped(): current_pc=" << current_pc<< Qt::endl;
+    qWarning() << "QemuDevice::hook_mem_unmapped(): current_pc="<<Qt::hex << current_pc<< Qt::endl;
     //也许我们需要做一些事情？
     return false;
 }

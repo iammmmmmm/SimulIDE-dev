@@ -7,7 +7,7 @@
 
 #include "qemudevice.h"
 #include "ioport.h"
-#include "Rcm.h"
+#include "rcm.h"
 
 class Stm32Pin;
 
@@ -61,6 +61,6 @@ class Stm32 : public QemuDevice
 
         uint32_t m_model;
         bool registerPeripheral() override;
-        std::unique_ptr<Rcm> rcm;
+        std::unique_ptr<Rcm> m_rcm;
         bool hook_code(uc_engine *uc, uint64_t address, uint32_t size, void *user_data) override;
 };

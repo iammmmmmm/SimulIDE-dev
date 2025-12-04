@@ -6,29 +6,15 @@
 #include <qlogging.h>
 #include <unicorn/unicorn.h>
 
-class PeripheralDevice {
+#include "e-element.h"
+
+class PeripheralDevice:public eElement{
   public:
-    virtual ~PeripheralDevice() = default;
+    explicit PeripheralDevice(): eElement("") {}
+    virtual bool handle_write(uc_engine *uc, uint64_t address, int size, int64_t value, void *user_data);
 
-    /**
-     * @brief handles memory write operations from simulated   firmware
-     * @param uc Unicorn Engine instance
-     * @param address the memory address to write to
-     * @param size The number of bytes written
-     * @param value the value written
-     * @return true means that the Hook has been successfully processed and simulation can continue; false means simulation should be stopped (or error)
-     */
-    virtual bool handle_write(uc_engine *uc, uint64_t address, int size, int64_t value);
 
-    /**
-         * @brief handles memory read operations from simulated firmware
-         * @param uc Unicorn Engine instance
-         * @param address The memory address to read
-         * @param size The number of bytes read
-         * @param read_value reference, used to write the simulated return value
-         * @return true means that the Hook has been successfully processed and can continue to be simulated; false means that the simulation should be stopped
-         */
-    virtual bool handle_read(uc_engine *uc, uint64_t address, int size, int64_t *read_value);
+    virtual bool handle_read(uc_engine *uc, uint64_t address, int size, int64_t *read_value, void *user_data);
     /**
      * @brief Get the starting address of the peripheral for search
      */
