@@ -17,6 +17,7 @@
 #include <unistd.h>
 
 #include "peripheral_factory.h"
+#include "Register.h"
 #ifdef __linux__
 #include <sys/mman.h>
 #include <sys/shm.h>
@@ -83,7 +84,7 @@ QemuDevice::QemuDevice( QString type, QString id )
                                , this, &QemuDevice::extraArgs, &QemuDevice::setExtraArgs )
     }, 0 } );
     unicorn_emulator_ptr=std::unique_ptr<UnicornEmulator>(new UnicornEmulator(arch,mode));
-
+   Register::set_debug_output(true);
 }
 QemuDevice::~QemuDevice()
 {

@@ -15,7 +15,7 @@
 #include "peripheral_factory.h"
 #include "stm32pin.h"
 #include "qemutwi.h"
-#include "rcm.h"
+#include "stm32Rcm.h"
 #include "stm32spi.h"
 #include "stm32usart.h"
 #include "gpio.h"
@@ -132,7 +132,7 @@ Component * Stm32::construct(QString type, QString id) {
     return new Stm32( type, id, device );
 }
 void Stm32::runToTime(uint64_t time) {
-    auto rcm_ = dynamic_cast<Rcm*>(peripheral_registry->findDevice(RCM_BASE));
+    auto rcm_ = dynamic_cast<stm32Rcm::Rcm*>(peripheral_registry->findDevice(RCM_BASE));
     if (rcm_) {
         uint64_t sys_freq = rcm_->getSysClockFrequency();
         double ps_per_inst;
@@ -313,7 +313,7 @@ uint16_t Stm32::readInputs( uint8_t port )
     return state;
 }
 bool Stm32::registerPeripheral() {
-    peripheral_registry->registerDevice(std::make_unique<Rcm>());
+    peripheral_registry->registerDevice(std::make_unique<stm32Rcm::Rcm>());
     peripheral_registry->registerDevice(std::make_unique<Fmc>());
     peripheral_registry->registerDevice(std::make_unique<Afio>());
     peripheral_registry->registerDevice(std::make_unique<Gpio>(GPIOA_BASE,"Port A"));
@@ -325,7 +325,7 @@ bool Stm32::registerPeripheral() {
 }
 bool Stm32::hook_code(uc_engine *uc, uint64_t address, uint32_t size, void *user_data) {
     const auto stm32_instance = static_cast<Stm32*>(user_data);
-    const auto rcm_device = dynamic_cast<Rcm*>(stm32_instance->peripheral_registry->findDevice(RCM_BASE));
+    const auto rcm_device = dynamic_cast<stm32Rcm::Rcm*>(stm32_instance->peripheral_registry->findDevice(RCM_BASE));
     rcm_device->run_tick(uc, address, size, user_data);
    //qDebug() << "Stm32::hook_code debug out "<<Qt::endl;
     return QemuDevice::hook_code( uc, address, size, user_data );
