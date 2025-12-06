@@ -49,6 +49,7 @@ class QemuDevice : public Chip
         ~QemuDevice();
 
         void initialize() override;
+        void print_memory_map_debug() const;
         void stamp() override;
         //void updateStep() override;
         void voltChanged() override;
@@ -69,10 +70,11 @@ class QemuDevice : public Chip
         void slotLoad();
         void slotReload();
         void slotOpenTerm( int num );
-
  static QemuDevice* self() { return m_pSelf; }
  static Component* construct( QString type, QString id );
  static LibraryItem* libraryItem();
+        //允许外设访问
+        std::unique_ptr<PeripheralRegistry> peripheral_registry;
 
     protected:
  static QemuDevice* m_pSelf;
@@ -118,35 +120,29 @@ class QemuDevice : public Chip
         uc_err uc_err;
         uc_arch arch = UC_ARCH_ARM;
         uc_mode mode = UC_MODE_THUMB;
-        std::unique_ptr<PeripheralRegistry> peripheral_registry;
         //The following variables must be set to the correct value before map
-        uint64_t FLASH_START = 0x08000000;
-        uint64_t FLASH_SIZE  = (32 * 1024);
-        #define FLASH_END  (FLASH_START + FLASH_SIZE)
-
-        uint64_t SRAM_START  = 0x20000000;
-        uint64_t SRAM_SIZE   = (4 * 1024);
-
-        uint64_t SYS_MEM_START = 0x00020000;
-        uint64_t SYS_MEM_SIZE  = (1 * 1024);
-
-        uint64_t ROM_START = 0x00000000;
-        # define ROM_SIZE  FLASH_SIZE
-
-        uint64_t PERIPHERAL_START    = 0x40000000;
-        uint64_t PERIPHERAL_END      = 0x400114FF;
-        # define PERIPHERAL_MAP_SIZE (PERIPHERAL_END - PERIPHERAL_START)
-
-        uint64_t PPB_START = 0xE0000000;
-        uint64_t PPB_SIZE  = 0x100000;
-
+        struct MemoryParams {
+            uint64_t FLASH_START = 0x08000000;
+            uint64_t FLASH_SIZE = (32 * 1024);
+            uint64_t SRAM_START = 0x20000000;
+            uint64_t SRAM_SIZE = (4 * 1024);
+            uint64_t SYS_MEM_START = 0x00020000;
+            uint64_t SYS_MEM_SIZE = (1 * 1024);
+            uint64_t ROM_START = 0x00000000;
+            uint64_t ROM_SIZE = 0x00000000;
+            uint64_t PERIPHERAL_START = 0x40000000;
+            uint64_t PERIPHERAL_END = 0x400114FF;
+            uint64_t PPB_START = 0xE0000000;
+            uint64_t PPB_SIZE = 0x100000;
+        };
+        MemoryParams m_mem_params;
         uint64_t target_instr_count=0;
         uint64_t target_instr_begin=0;
         //uint64_t target_instr_end=0;
         uint64_t last_target_time=0;
         uint64_t target_time=0;
 
-
+        virtual void setupDeviceParams(){};
         void set_hooks();
         void hook_mem_wr(uc_engine *uc,uc_mem_type type,uint64_t address,int size,int64_t value,void *user_data);
         static  void hook_mem_wr_wappler

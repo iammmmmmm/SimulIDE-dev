@@ -84,7 +84,7 @@ QemuDevice::QemuDevice( QString type, QString id )
                                , this, &QemuDevice::extraArgs, &QemuDevice::setExtraArgs )
     }, 0 } );
     unicorn_emulator_ptr=std::unique_ptr<UnicornEmulator>(new UnicornEmulator(arch,mode));
-   Register::set_debug_output(true);
+   Register::set_debug_output(false);
 }
 QemuDevice::~QemuDevice()
 {
@@ -98,15 +98,53 @@ void QemuDevice::initialize()
      last_target_time=0;
      target_time=0;
 }
+void QemuDevice::print_memory_map_debug() const {
+    qDebug() << "============================================";
+    qDebug() << "          Unicorn 内存映射配置 (Memory Map)       ";
+    qDebug() << "============================================";
 
+    // 格式化输出函数，使用QDebug << QHex
+    auto print_map_info = [](const QString& name, uint64_t start, uint64_t size, uint32_t prot) {
+        QString prot_str;
+        if (prot & UC_PROT_READ)  prot_str += "R";
+        if (prot & UC_PROT_WRITE) prot_str += "W";
+        if (prot & UC_PROT_EXEC)  prot_str += "X";
+
+        qDebug().nospace() << "✅ [" << name << "]"
+                           << " | START: 0x" << QString::number(start, 16).toUpper()
+                           << " | SIZE: " << (size / 1024) << " KB (0x" << QString::number(size, 16).toUpper() << ")"
+                           << " | END: 0x" << QString::number(start + size, 16).toUpper()
+                           << " | PROT: " << prot_str;
+    };
+
+    // 1. FLASH 映射 (代码和常量)
+    print_map_info("FLASH", m_mem_params.FLASH_START,  m_mem_params.FLASH_SIZE, UC_PROT_READ | UC_PROT_EXEC);
+
+    // 2. SRAM 映射 (运行时数据/堆栈)
+    print_map_info("SRAM",  m_mem_params.SRAM_START,  m_mem_params.SRAM_SIZE, UC_PROT_READ | UC_PROT_WRITE | UC_PROT_EXEC);
+
+    // 3. ROM 映射 (启动向量/重映射)
+    print_map_info("ROM (Boot)",  m_mem_params.ROM_START,  m_mem_params.ROM_SIZE, UC_PROT_READ | UC_PROT_EXEC);
+
+    // 4. PERIPHERAL 映射 (硬件寄存器)
+    print_map_info("PERIPHERAL",  m_mem_params.PERIPHERAL_START,  m_mem_params.PERIPHERAL_END-m_mem_params.PERIPHERAL_START, UC_PROT_READ | UC_PROT_WRITE);
+
+    // 5. PPB 映射 (内核私有外设)
+    print_map_info("PPB (Core)",  m_mem_params.PPB_START,  m_mem_params.PPB_SIZE, UC_PROT_READ | UC_PROT_WRITE);
+
+    qDebug() << "============================================";
+}
 void QemuDevice::stamp()
 {
-    unicorn_emulator_ptr=std::unique_ptr<UnicornEmulator>(new UnicornEmulator(arch,mode));
-    uc_err = uc_mem_map(unicorn_emulator_ptr->get(), FLASH_START, FLASH_SIZE, UC_PROT_READ | UC_PROT_EXEC);
-    uc_err=uc_mem_map(unicorn_emulator_ptr->get(), SRAM_START, SRAM_SIZE, UC_PROT_READ | UC_PROT_WRITE | UC_PROT_EXEC);
-    uc_err=uc_mem_map(unicorn_emulator_ptr->get(), ROM_START, ROM_SIZE, UC_PROT_READ | UC_PROT_EXEC);
-    uc_err=uc_mem_map(unicorn_emulator_ptr->get(),PERIPHERAL_START,PERIPHERAL_MAP_SIZE,UC_PROT_READ | UC_PROT_WRITE);
-    uc_err=uc_mem_map(unicorn_emulator_ptr->get(), PPB_START, PPB_SIZE, UC_PROT_READ | UC_PROT_WRITE);
+    setupDeviceParams();
+    print_memory_map_debug();
+    unicorn_emulator_ptr=std::make_unique<UnicornEmulator>(arch,mode);
+    uc_err = uc_mem_map(unicorn_emulator_ptr->get(),  m_mem_params.FLASH_START,  m_mem_params.FLASH_SIZE, UC_PROT_READ | UC_PROT_EXEC);
+    uc_err=uc_mem_map(unicorn_emulator_ptr->get(),  m_mem_params.SRAM_START,  m_mem_params.SRAM_SIZE, UC_PROT_READ | UC_PROT_WRITE | UC_PROT_EXEC);
+    uc_err=uc_mem_map(unicorn_emulator_ptr->get(),  m_mem_params.ROM_START,  m_mem_params.ROM_SIZE, UC_PROT_READ | UC_PROT_EXEC);
+    uc_err=uc_mem_map(unicorn_emulator_ptr->get(), m_mem_params.PERIPHERAL_START, m_mem_params.PERIPHERAL_END-m_mem_params.PERIPHERAL_START,UC_PROT_READ | UC_PROT_WRITE);
+    uc_err=uc_mem_map(unicorn_emulator_ptr->get(),  m_mem_params.PPB_START,  m_mem_params.PPB_SIZE, UC_PROT_READ | UC_PROT_WRITE);
+
     if (uc_err) {
         qWarning() <<"uc map err；"<<uc_strerror(uc_err);
         return;
@@ -299,6 +337,7 @@ void QemuDevice::contextMenu( QGraphicsSceneContextMenuEvent* event, QMenu* menu
     menu->addSeparator();
     Component::contextMenu( event, menu );
 }
+
 void QemuDevice::set_hooks() {
     uc_hook hh_mem_write;
     uc_hook hh_code;
@@ -309,16 +348,16 @@ void QemuDevice::set_hooks() {
        UC_HOOK_MEM_READ|UC_HOOK_MEM_WRITE,
        reinterpret_cast<void*>(hook_mem_wr_wappler),
        static_cast<void*>(this),
-       PERIPHERAL_START,
-       PERIPHERAL_END);
+       m_mem_params.PERIPHERAL_START,
+       m_mem_params.PERIPHERAL_END);
     uc_err = uc_hook_add(
            unicorn_emulator_ptr->get(),
            &hh_code,
            UC_HOOK_CODE,
            reinterpret_cast<void*>(hook_code_wappler),
            static_cast<void*>(this),
-           FLASH_START,
-           FLASH_END);
+           m_mem_params.FLASH_START,
+           m_mem_params.FLASH_START+m_mem_params.FLASH_SIZE);
     uc_err = uc_hook_add(
            unicorn_emulator_ptr->get(),
            &hh_mem_unmap,
@@ -333,10 +372,11 @@ void QemuDevice::set_hooks() {
 }
 void QemuDevice::hook_mem_wr(uc_engine *uc,uc_mem_type type,uint64_t address,int size,int64_t value,void *user_data) {
     //qDebug()<<"QemuDevice::hook_mem_wr";
-    QemuDevice* device = static_cast<QemuDevice*>(user_data);
-    if (address>=device->PERIPHERAL_START&&address<=device->PERIPHERAL_END) {
+    auto* device = static_cast<QemuDevice*>(user_data);
+    if (address>=device->m_mem_params.PERIPHERAL_START&&address<=device->m_mem_params.PERIPHERAL_END) {
         PeripheralDevice *peripheral = peripheral_registry->findDevice(address);
         if (peripheral) {
+            //qDebug().noquote()<<"指令PC：0x"<<Qt::hex<<getCurrentPc()<<Qt::endl;
             if (type==UC_MEM_WRITE) {
                 peripheral->handle_write(uc,address,size,value, user_data);
             }else {
@@ -379,8 +419,8 @@ bool QemuDevice::loadFirmware() {
     if (file.read(reinterpret_cast<char *>(buffer.data()), size)) {
         qDebug() << "Successfully read firmware, size；" << size << " byte。"<< Qt::endl;
 
-        uc_err = uc_mem_write(unicorn_emulator_ptr->get(), FLASH_START, buffer.data(), size);
-        uc_err = uc_mem_write(unicorn_emulator_ptr->get(), ROM_START, buffer.data(), size);
+        uc_err = uc_mem_write(unicorn_emulator_ptr->get(), m_mem_params.FLASH_START, buffer.data(), size);
+        uc_err = uc_mem_write(unicorn_emulator_ptr->get(), m_mem_params.ROM_START, buffer.data(), size);
         if (uc_err) {
             qWarning() << "failed to write firmware to mem error : " <<uc_strerror( uc_err);
             file.close();
@@ -398,7 +438,7 @@ bool QemuDevice::loadFirmware() {
 uint64_t QemuDevice::getStartPc() {
     uint32_t sp_val, pc_val;
     uint64_t start_pc;
-    uc_err = uc_mem_read(unicorn_emulator_ptr->get(), FLASH_START, &sp_val, sizeof(sp_val));
+    uc_err = uc_mem_read(unicorn_emulator_ptr->get(), m_mem_params.FLASH_START, &sp_val, sizeof(sp_val));
     if (uc_err == UC_ERR_OK) {
         uc_reg_write(unicorn_emulator_ptr->get(), UC_ARM_REG_SP, &sp_val);
         qDebug( "the initial sp is set to:%x", sp_val) ;
@@ -406,7 +446,7 @@ uint64_t QemuDevice::getStartPc() {
         qWarning() << "failed to read sp initial value error code: " << uc_strerror(uc_err) << Qt::endl;
         return false;
     }
-    uc_err = uc_mem_read(unicorn_emulator_ptr->get(), FLASH_START + 4, &pc_val, sizeof(pc_val));
+    uc_err = uc_mem_read(unicorn_emulator_ptr->get(), m_mem_params.FLASH_START + 4, &pc_val, sizeof(pc_val));
     if (uc_err == UC_ERR_OK) {
         // start_pc = (FLASH_START + pc_val) | 1; //NOTE 这里很怪，apm32f003x系列使用这个也可以启动，使用下面哪个都能启动
         start_pc = pc_val | 1;

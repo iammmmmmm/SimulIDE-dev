@@ -18,8 +18,8 @@
 #include "stm32Rcm.h"
 #include "stm32spi.h"
 #include "stm32usart.h"
-#include "gpio.h"
-#include "fmc.h"
+#include "stm32Gpio.h"
+#include "stm32Fmc.h"
 #include "simulator.h"
 #define tr(str) simulideTr("Stm32",str)
 
@@ -69,17 +69,7 @@ Stm32::Stm32( QString type, QString id, QString device )
 
     //TODO set Flash and sram size,and HSI_FREQ,HSE_FREQ,MAX_CPU_FREQ
 
-     FLASH_SIZE  = (256 * 1024);
-     SRAM_SIZE   = (64 * 1024);
-     ROM_SIZE  = (32 * 1024);
 
-     SYS_MEM_START = 0x00020000;
-     SYS_MEM_SIZE  = (1 * 1024);
-
-     PERIPHERAL_START    = 0x40000000;
-     PERIPHERAL_END      = 0x40023000;
-
-     PPB_START = 0xE0000000;
 
      target_instr_count=0;
      target_instr_begin=0;
@@ -132,28 +122,33 @@ Component * Stm32::construct(QString type, QString id) {
     return new Stm32( type, id, device );
 }
 void Stm32::runToTime(uint64_t time) {
-    auto rcm_ = dynamic_cast<stm32Rcm::Rcm*>(peripheral_registry->findDevice(RCM_BASE));
+    const auto rcm_ = dynamic_cast<stm32Rcm::Rcm*>(peripheral_registry->findDevice(RCM_BASE));
     if (rcm_) {
+        QElapsedTimer timer;
         uint64_t sys_freq = rcm_->getSysClockFrequency();
         double ps_per_inst;
         if (sys_freq > 0) {
             // 10^12 是 1 秒的皮秒数
-            ps_per_inst = 1e12 / (double)sys_freq;
+            ps_per_inst = 1e12 / static_cast<double>(sys_freq)*4.0;//实际mcu不能每时钟周期一指令，所以假设每指令要四时钟周期
         } else {
             //TODO here need do somethings ?
-            ps_per_inst = 125000.0;
+            ps_per_inst = 125000.0*4.0;
         }
         target_instr_count = calculateInstructionsToExecute(time, last_target_time, ps_per_inst);
-        uc_err = uc_emu_start(unicorn_emulator_ptr->get(), target_instr_begin, 0, 0, target_instr_count);
+        qDebug()<<"target_instr_count:"<<target_instr_count<<Qt::endl;
+        timer.start();
+        if (target_instr_count > 0) {
+            uc_err = uc_emu_start(unicorn_emulator_ptr->get(), target_instr_begin, 0, 0, target_instr_count);
+        }
+        const uint64_t time_use=timer.elapsed();
         if (uc_err != UC_ERR_OK) {
             //FIXME: TODO somthings
             qWarning()<<"void Stm32::runToTime(uint64_t time) uc err"<<uc_strerror(uc_err)<<"pc:"<<Qt::hex<<getCurrentPc()<<Qt::endl;
-
             Simulator::self()->stopSim();
         }
-        qDebug()<<"run to "<<time<<" "<<uc_strerror(uc_err)<<Qt::endl;
+        qDebug()<<"run to time:"<<time<<" "<<uc_strerror(uc_err)<<"target_instr_count:"<<target_instr_count<<"use time:"<<time_use<<"ms"<<Qt::endl;
         last_target_time = time;
-        target_instr_begin=getCurrentPc();
+        target_instr_begin=getCurrentPc()|1;//// 将 LSB 置 1，告诉 Unicorn 下次从这个地址开始时使用Thumb 模式
     } else {
         qWarning() << "rcm peripheral not found for instruction calculation.";
     }
@@ -298,6 +293,16 @@ void Stm32::doAction()
         default: qDebug() << "Stm32::doAction Unimplemented"<< m_arena->simuAction;
     }
 }
+void Stm32::setupDeviceParams() {
+  m_mem_params.FLASH_SIZE  = (256 * 1024);
+    m_mem_params.SRAM_SIZE   = (64 * 1024);
+    m_mem_params.ROM_SIZE  = m_mem_params.FLASH_SIZE;
+    m_mem_params.SYS_MEM_START = 0x00020000;
+    m_mem_params.SYS_MEM_SIZE  = (1 * 1024);
+    m_mem_params.PERIPHERAL_START    = 0x40000000;
+    m_mem_params.PERIPHERAL_END      = 0x40023000;
+    m_mem_params.PPB_START = 0xE0000000;
+}
 
 uint16_t Stm32::readInputs( uint8_t port )
 {
@@ -314,13 +319,13 @@ uint16_t Stm32::readInputs( uint8_t port )
 }
 bool Stm32::registerPeripheral() {
     peripheral_registry->registerDevice(std::make_unique<stm32Rcm::Rcm>());
-    peripheral_registry->registerDevice(std::make_unique<Fmc>());
+   // peripheral_registry->registerDevice(std::make_unique<stm32Fmc>());
     peripheral_registry->registerDevice(std::make_unique<Afio>());
-    peripheral_registry->registerDevice(std::make_unique<Gpio>(GPIOA_BASE,"Port A"));
-    peripheral_registry->registerDevice(std::make_unique<Gpio>(GPIOB_BASE,"Port B"));
-    peripheral_registry->registerDevice(std::make_unique<Gpio>(GPIOC_BASE,"Port C"));
-    peripheral_registry->registerDevice(std::make_unique<Gpio>(GPIOD_BASE,"Port D"));
-    peripheral_registry->registerDevice(std::make_unique<Gpio>(GPIOE_BASE,"Port E"));
+    peripheral_registry->registerDevice(std::make_unique<stm32Gpio::Gpio>(GPIOA_BASE,"Port A"));
+    peripheral_registry->registerDevice(std::make_unique<stm32Gpio::Gpio>(GPIOB_BASE,"Port B"));
+    peripheral_registry->registerDevice(std::make_unique<stm32Gpio::Gpio>(GPIOC_BASE,"Port C"));
+    peripheral_registry->registerDevice(std::make_unique<stm32Gpio::Gpio>(GPIOD_BASE,"Port D"));
+    peripheral_registry->registerDevice(std::make_unique<stm32Gpio::Gpio>(GPIOE_BASE,"Port E"));
     return true;
 }
 bool Stm32::hook_code(uc_engine *uc, uint64_t address, uint32_t size, void *user_data) {
@@ -328,6 +333,48 @@ bool Stm32::hook_code(uc_engine *uc, uint64_t address, uint32_t size, void *user
     const auto rcm_device = dynamic_cast<stm32Rcm::Rcm*>(stm32_instance->peripheral_registry->findDevice(RCM_BASE));
     rcm_device->run_tick(uc, address, size, user_data);
    //qDebug() << "Stm32::hook_code debug out "<<Qt::endl;
+        //
+    // if (address >= 0x8000000) {
+    //     uint64_t pc_val, lr_val;
+    //     uint32_t cpsr_val;
+    //
+    //     // 读取关键寄存器的值
+    //     uc_reg_read(uc, UC_ARM_REG_PC, &pc_val);
+    //     uc_reg_read(uc, UC_ARM_REG_LR, &lr_val);
+    //     uc_reg_read(uc, UC_ARM_REG_CPSR, &cpsr_val);
+    //     bool is_thumb = (cpsr_val & 0x20) != 0;
+    //     // 如果 T-bit 没有设置，直接发出警告，这可能是 INSN_INVALID 的原因
+    //     if (!is_thumb) {
+    //         qDebug().nospace() << "   @ CPSR: 0x" << QString::number(cpsr_val, 16).toUpper()
+    //                      << " | T-bit (bit 5): " << (is_thumb ? "SET (Thumb Mode)" : "CLEAR (ARM Mode)");
+    //         qDebug() << "   *** WARNING: T-bit is CLEAR! BL instruction requires Thumb Mode for decoding. ***";
+    //         qDebug() << "-----------------------------------------------";
+    //         qDebug() << "🎯 TRACE: Executing BL (Branch with Link) instruction";
+    //         qDebug().nospace() << "   @ PC: 0x" << QString::number(address, 16).toUpper()
+    //                            << " | Size: " << size << " bytes";
+    //         // 在指令执行之前，PC 应该是 0x80001ec。
+    //         // 如果 Hook 是 UC_HOOK_CODE，那么此时指令正准备执行。
+    //         // 如果 Hook 是 UC_HOOK_CODE_FOR_EXEC，那么此时指令已成功取指。
+    //         // 打印跳转目标和返回地址 (LR)
+    //         qDebug().nospace() << "   -> Target (APM_MINI_LEDInit): 0x" << QString::number(0x8000304, 16).toUpper();
+    //         qDebug().nospace() << "   -> Expected Return (LR): 0x" << QString::number(0x80001f0, 16).toUpper();
+    //     }
+    //     if (!is_thumb) {
+    //         // 1. 设置 T-bit (CPSR 第 5 位) 为 1
+    //         uint32_t new_cpsr = cpsr_val | 0x20;
+    //
+    //         // 2. 将修改后的 CPSR 值写回寄存器
+    //         if (uc_reg_write(uc, UC_ARM_REG_CPSR, &new_cpsr) == UC_ERR_OK) {
+    //             qDebug().nospace() << "   *** FIX: Successfully set T-bit to 1 (Thumb Mode). New CPSR: 0x"
+    //                                << QString::number(new_cpsr, 16).toUpper() << " ***";
+    //         } else {
+    //             qDebug() << "   *** ERROR: Failed to write new CPSR value! ***";
+    //         }
+    //     }
+    // }
+
+
+
     return QemuDevice::hook_code( uc, address, size, user_data );
 }
 // bool hook_code(uc_engine *uc, uint64_t address, uint32_t size, void *user_data) {

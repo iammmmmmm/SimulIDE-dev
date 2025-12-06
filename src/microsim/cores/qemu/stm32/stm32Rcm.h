@@ -37,7 +37,7 @@ namespace stm32Rcm{
 
 class Rcm : public PeripheralDevice {
   private:
-     std::map<uint32_t, std::unique_ptr<Register>> m_registers;
+    std::map<uint32_t, std::unique_ptr<Register>> m_registers;
     void initialize_registers();
     // Status: Number of wait cycles required for the analog clock to start
     struct {
@@ -47,7 +47,6 @@ class Rcm : public PeripheralDevice {
       const uint64_t PLL_DELAY_TICKS = 750;  // 假设 PLL 需要
       uint64_t rcm_ticks = 0;
     } m_clock_timing;
-
   public:
     Rcm(uint64_t hsi_freq,uint64_t hse_freq,uint64_t max_cpu_freq);
     Rcm();
@@ -72,5 +71,8 @@ class Rcm : public PeripheralDevice {
      uint64_t HSE_FREQ = 8000000; // 8MHz (外部晶振)
      uint64_t MAX_CPU_FREQ = 96000000; // 96MHz
   void runEvent() override;
+    bool isAHPB2ClockEnabled(string name) {
+    return m_registers[RCM_APB2CLKEN_OFFSET]->get_field_value_non_intrusive(name);
+    };
 };
 }

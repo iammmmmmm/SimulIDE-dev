@@ -30,7 +30,7 @@ class Stm32 : public QemuDevice
         void createPort( std::vector<Stm32Pin*>* port, uint8_t number, QString pId, uint8_t n );
         void createPins();
         void doAction() override;
-
+     void setupDeviceParams() override;
         void cofigPort( uint8_t port,  uint32_t config, uint8_t shift );
 
         void setPortState( uint8_t port, uint16_t state );

@@ -23,25 +23,40 @@ Rcm::Rcm() {
 void Rcm::initialize_registers() {
 
   // 0x00: 时钟控制寄存器 (RCM_CTRL)
-  m_registers[RCM_CTRL_OFFSET] = std::make_unique<stm32RCM_CTRL_Register>(RCM_CTRL_OFFSET);
+  m_registers[RCM_CTRL_OFFSET] = std::make_unique<CTRL_Register>(RCM_CTRL_OFFSET);
   // 0x04: 时钟配置寄存器 (RCM_CFG)
-  m_registers[RCM_CFG_OFFSET] = std::make_unique<stm32RCM_CFG_Register>(RCM_CFG_OFFSET);
+  m_registers[RCM_CFG_OFFSET] = std::make_unique<CFG_Register>(RCM_CFG_OFFSET);
   // 0x08: 时钟中断寄存器 (RCM_INT)
-  m_registers[RCM_INT_OFFSET] = std::make_unique<stm32RCM_INT_Register>(RCM_INT_OFFSET);
+  m_registers[RCM_INT_OFFSET] = std::make_unique<INT_Register>(RCM_INT_OFFSET);
   // 0x0C: APB2 外设复位寄存器 (RCM_APB2RST)
-  m_registers[RCM_APB2RST_OFFSET] = std::make_unique<stm32RCM_APB2RST_Register>(RCM_APB2RST_OFFSET);
+  m_registers[RCM_APB2RST_OFFSET] = std::make_unique<APB2RST_Register>(RCM_APB2RST_OFFSET);
   // 0x10: APB1 外设复位寄存器 (RCM_APB1RST)
-  m_registers[RCM_APB1RST_OFFSET] = std::make_unique<stm32RCM_APB1RST_Register>(RCM_APB1RST_OFFSET);
+  m_registers[RCM_APB1RST_OFFSET] = std::make_unique<APB1RST_Register>(RCM_APB1RST_OFFSET);
   // 0x14: AHB 外设时钟使能寄存器 (RCM_AHBCLKEN)
-  m_registers[RCM_AHBCLKEN_OFFSET] = std::make_unique<stm32RCM_AHBCLKEN_Register>(RCM_AHBCLKEN_OFFSET);
+  m_registers[RCM_AHBCLKEN_OFFSET] = std::make_unique<AHBCLKEN_Register>(RCM_AHBCLKEN_OFFSET);
   // 0x18: APB2 外设时钟使能寄存器 (RCM_APB2CLKEN)
-  m_registers[RCM_APB2CLKEN_OFFSET] = std::make_unique<stm32RCM_APB2CLKEN_Register>(RCM_APB2CLKEN_OFFSET);
+  m_registers[RCM_APB2CLKEN_OFFSET] = std::make_unique<APB2CLKEN_Register>(RCM_APB2CLKEN_OFFSET);
   // 0x1C: APB1 外设时钟使能寄存器 (RCM_APB1CLKEN)
-  m_registers[RCM_APB1CLKEN_OFFSET] = std::make_unique<stm32RCM_APB1CLKEN_Register>(RCM_APB1CLKEN_OFFSET);
+  m_registers[RCM_APB1CLKEN_OFFSET] = std::make_unique<APB1CLKEN_Register>(RCM_APB1CLKEN_OFFSET);
   // 0x20: 备份域控制寄存器 (RCM_BDCTRL)
-  m_registers[RCM_BDCTRL_OFFSET] = std::make_unique<stm32RCM_BDCTRL_Register>(RCM_BDCTRL_OFFSET);
+  m_registers[RCM_BDCTRL_OFFSET] = std::make_unique<BDCTRL_Register>(RCM_BDCTRL_OFFSET);
   // 0x24: 控制/状态寄存器 (RCM_CSTS)
-  m_registers[RCM_CSTS_OFFSET] = std::make_unique<stm32RCM_CSTS_Register>(RCM_CSTS_OFFSET);
+  m_registers[RCM_CSTS_OFFSET] = std::make_unique<CSTS_Register>(RCM_CSTS_OFFSET);
+
+  m_registers[RCM_CTRL_OFFSET]->find_field("HSEEN")->write_callback= {
+    [this](Register &reg, uint32_t new_field_value) {
+      if (new_field_value == 1) {
+      //open hse
+        m_clock_timing.hse_start_tick=m_clock_timing.rcm_ticks;
+      //  qDebug()<<"[RCM] mcu固件请求打开 HSE 时钟,在内部ticks："<<m_clock_timing.rcm_ticks<<Qt::endl;
+      }
+    }
+  };
+  m_registers[RCM_CFG_OFFSET]->find_field("SYSCLKSEL")->write_callback= {
+    [this](Register &reg, uint32_t new_field_value) {
+    reg.set_field_value_non_intrusive("SCLKSELSTS",new_field_value);
+    }
+  };
 }
 
 // 处理写入操作
@@ -53,8 +68,14 @@ bool Rcm::handle_write(uc_engine *uc, uint64_t address, int size, int64_t value,
     return false;
   }
   const auto offset = static_cast<uint32_t>(address - RCM_BASE);
-  const auto new_value = static_cast<uint32_t>(value);
+  if (m_registers.count(offset)) {
+    const auto new_value = static_cast<uint32_t>(value);
   m_registers[offset]->write(new_value);
+  }else {
+    qWarning().noquote() << QString("   [CMU W: 0x%1] 警告: 访问未注册寄存器!").arg(offset, 0, 16);
+    return false;
+  }
+
   return true;
 }
 
@@ -66,7 +87,7 @@ bool Rcm::handle_read(uc_engine *uc,uint64_t address,int size,int64_t *read_valu
              static_cast<unsigned>(address));
     return false;
   }
-  auto offset = static_cast<uint32_t>(address - RCM_BASE);
+  const auto offset = static_cast<uint32_t>(address - RCM_BASE);
   uint32_t stored_value = 0;
   if (m_registers.count(offset)) {
     stored_value = m_registers[offset]->read();
@@ -82,10 +103,33 @@ bool Rcm::handle_read(uc_engine *uc,uint64_t address,int size,int64_t *read_valu
 
 void Rcm::run_tick(uc_engine *uc, uint64_t address, uint32_t size, void *user_data) {
   m_clock_timing.rcm_ticks++;
-  // if (m_clock_timing.rcm_ticks%1000==0) {
-  //    qDebug("[RCM] Run tick at 0x%x rcm_ticks:%llu" , static_cast<unsigned>(address),m_clock_timing.rcm_ticks);
+  // if (m_clock_timing.rcm_ticks%10000==0) {
+  //   qDebug("[RCM] Run tick at 0x%x rcm_ticks:%llu" , static_cast<unsigned>(address),m_clock_timing.rcm_ticks);
   // }
 
+  // 检查 HSE 启动是否完成
+  if (m_clock_timing.hse_start_tick != 0) {
+    const uint64_t elapsed_ticks = m_clock_timing.rcm_ticks - m_clock_timing.hse_start_tick;
+
+    // 时钟就绪标志应在延迟时间结束后设置
+    if (elapsed_ticks >= m_clock_timing.HSE_DELAY_TICKS) {
+
+      // 1. 设置 HSE Ready 标志位 (HSERDYFLG)
+      m_registers[RCM_CTRL_OFFSET]->set_field_value_non_intrusive("HSERDYFLG", 1);
+
+      // 2. 清除启动追踪标记
+      m_clock_timing.hse_start_tick = 0;
+
+    //  qDebug() << "[RCM] HSE 启动完成。HSERDYFLG 已置位 1。";
+
+      // // 3. 检查 HSI Ready 中断是否启用 (HSERDYFLG 在 RCM_INT 寄存器中)
+      // if (m_registers[RCM_INT_OFFSET]->get_field_value_non_intrusive("HSERDYFLG") == 1) {
+      //   // 设置 HSI Ready 中断标志 (HSERDYFLG)
+      //   m_registers[RCM_INT_OFFSET]->set_field_value_non_intrusive("HSERDYFLG", 1);
+      //   qDebug() << "[RCM] HSI Ready 中断标志 (HSERDYFLG) 已置位。";
+      // }
+    }
+  }
 }
 void Rcm::runEvent() {
 
