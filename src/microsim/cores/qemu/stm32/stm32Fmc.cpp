@@ -39,7 +39,7 @@ bool Fmc::handle_read(uc_engine *uc, uint64_t address, int size, int64_t *read_v
   const auto offset = static_cast<uint32_t>(address - FMC_BASE_ADDR);
   uint32_t stored_value = 0;
   if (m_registers.count(offset)) {
-    stored_value = m_registers[offset]->read();
+    stored_value = m_registers[offset]->read(user_data);
   }else {
     qWarning().noquote() << QString("   [FMC R: 0x%1] 警告: 访问未注册寄存器!").arg(offset, 0, 16);
     *read_value = 0;
@@ -70,7 +70,7 @@ bool Fmc::handle_write(uc_engine *uc, uint64_t address, int size, int64_t value,
   const auto offset = static_cast<uint32_t>(address - FMC_BASE_ADDR);
   if (m_registers.count(offset)) {
     const auto new_value = static_cast<uint32_t>(value);
-    m_registers[offset]->write(new_value);
+    m_registers[offset]->write(new_value,user_data);
   }else {
     qWarning().noquote() << QString("   [FMC W: 0x%1] 警告: 访问未注册寄存器!").arg(offset, 0, 16);
     return false;

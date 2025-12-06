@@ -13,7 +13,6 @@ class PeripheralDevice:public eElement{
     explicit PeripheralDevice(): eElement("") {}
     virtual bool handle_write(uc_engine *uc, uint64_t address, int size, int64_t value, void *user_data);
 
-
     virtual bool handle_read(uc_engine *uc, uint64_t address, int size, int64_t *read_value, void *user_data);
     /**
      * @brief Get the starting address of the peripheral for search

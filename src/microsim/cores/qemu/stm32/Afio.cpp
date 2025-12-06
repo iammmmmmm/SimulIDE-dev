@@ -33,7 +33,7 @@ void Afio::initialize_registers() {
  * @note 这是一个简化的检查，实际模拟中需要与 RCM 模块交互
  */
 bool Afio::is_clock_enabled(uc_engine *uc) const {
-  // 简化: 总是返回 true，或根据您的模拟环境实现 RCM_APB2CLKEN_ADDR 的读取逻辑
+  // 简化: 总是返回 true，或根据您的模拟环境实现 APB2CLKEN_ADDR 的读取逻辑
   // 实际应读取 RCM_APB2CLKEN 寄存器的 AFIOEN 位 (位 0)
   // 假设 RCM_APB2CLKEN 寄存器已被正确映射
   return true;

@@ -19,8 +19,8 @@ namespace stm32Gpio {
  */
 class GPIOx_CFGLOW final: public Register {
 public:
-    explicit GPIOx_CFGLOW(uint32_t offset)
-        : Register(offset, "GPIOx_CFGLOW", 0x44444444) {
+    explicit GPIOx_CFGLOW(const uint32_t offset, const string &portName)
+        : Register(offset, "GPIO"+portName+"_CFGLOW", 0x44444444) {
 
         // CFGy[1:0] 和 MODEy[1:0] 成对出现，共 8 对（y=0..7）
         // 模式位 MODEy[1:0] 在 (29:28), (25:24), ..., (1:0)
@@ -68,8 +68,8 @@ public:
  */
 class GPIOx_CFGHIG final: public Register {
 public:
-    explicit GPIOx_CFGHIG(uint32_t offset)
-        : Register(offset, "GPIOx_CFGHIG", 0x44444444) {
+    explicit GPIOx_CFGHIG(const uint32_t offset, const string &portName)
+        : Register(offset, "GPIO"+portName+"_CFGHIG", 0x44444444) {
 
         // CFGy[1:0] 和 MODEy[1:0] 成对出现，共 8 对（y=8..15）
         // 结构与 CFGLOW 相同，只是引脚索引 y=8..15
@@ -118,8 +118,8 @@ public:
  */
 class GPIOx_IDATA final: public Register {
 public:
-    explicit GPIOx_IDATA(uint32_t offset)
-        : Register(offset, "GPIOx_IDATA", 0x00000000) { // 使用 0x00000000 作为默认复位值（假设不影响读取）
+    explicit GPIOx_IDATA(const uint32_t offset, const string &portName)
+        : Register(offset, "GPIO"+portName+"_IDATA", 0x00000000) { // 使用 0x00000000 作为默认复位值（假设不影响读取）
 
         // --- Bit 15:0: IDATAy (端口x引脚y输入数据) RO
         m_fields.push_back({
@@ -145,8 +145,8 @@ public:
  */
 class GPIOx_ODATA final: public Register {
 public:
-    explicit GPIOx_ODATA(uint32_t offset)
-        : Register(offset, "GPIOx_ODATA", 0x00000000) {
+    explicit GPIOx_ODATA(const uint32_t offset, const string &portName)
+        : Register(offset, "GPIO"+portName+"_ODATA", 0x00000000) {
 
         // --- Bit 15:0: ODATAy (端口x引脚y输出数据) R/W
         m_fields.push_back({
@@ -172,17 +172,17 @@ public:
  */
 class GPIOx_BSC final: public Register {
 public:
-    explicit GPIOx_BSC(uint32_t offset)
-        : Register(offset, "GPIOx_BSC", 0x00000000) {
+    explicit GPIOx_BSC(const uint32_t offset, const string &portName)
+        : Register(offset, "GPIO"+portName+"_BSC", 0x00000000) {
 
-        // --- Bit 15:0: BSy (置位端口x引脚y) W (写)
+        // --- Bit 15:0: BSy (置位端口x引脚y) WO
         m_fields.push_back({
             "BS", 0, 16, BitFieldAccess::WO,
             {}, // 数据字段，保留空
             nullptr, nullptr
         });
 
-        // --- Bit 31:16: BCy (清除端口x引脚y) W (写)
+        // --- Bit 31:16: BCy (清除端口x引脚y) WO
         m_fields.push_back({
             "BC", 16, 16, BitFieldAccess::WO,
             {}, // 数据字段，保留空
@@ -206,12 +206,12 @@ public:
  */
 class GPIOx_BC final: public Register {
 public:
-    explicit GPIOx_BC(uint32_t offset)
-        : Register(offset, "GPIOx_BC", 0x00000000) {
+    explicit GPIOx_BC(const uint32_t offset, const string &portName)
+        : Register(offset, "GPIO"+portName+"_BC", 0x00000000) {
 
         // --- Bit 15:0: BCy (清除端口x引脚y) W (写)
         m_fields.push_back({
-            "BC", 0, 16, BitFieldAccess::W,
+            "BC", 0, 16, BitFieldAccess::WO,
             {}, // 数据字段，保留空
             nullptr, nullptr
         });
@@ -233,8 +233,8 @@ public:
  */
 class GPIOx_LOCK final: public Register {
 public:
-    explicit GPIOx_LOCK(uint32_t offset)
-        : Register(offset, "GPIOx_LOCK", 0x00000000) {
+    explicit GPIOx_LOCK(const uint32_t offset, const string &portName)
+        : Register(offset, "GPIO"+portName+"_LOCK", 0x00000000) {
 
         // --- Bit 15:0: LOCKy (配置端口x引脚y锁位) R/W
         // 只能在 LOCKKEY=0 时写入

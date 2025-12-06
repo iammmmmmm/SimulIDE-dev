@@ -50,10 +50,10 @@ private:
     uint64_t m_base_addr = AFIO_BASE_ADDR;
 
     // RCM_APB2CLKEN 地址 (假设与 GPIO 共用 RCM 模块)
-    // 假设 RCM_BASE_ADDR = 0x40021000, RCM_APB2CLKEN_OFFSET = 0x0C (需根据实际手册确认)
+    // 假设 RCM_BASE_ADDR = 0x40021000, APB2CLKEN_OFFSET = 0x0C (需根据实际手册确认)
     // 这里只使用 gpio.h 中定义的 AFIOEN 位
     #define RCM_APB2CLKEN_AFIOEN   ((uint32_t)0x00000001) // AFIOEN 位 0
-    #define RCM_APB2CLKEN_ADDR     ((uint64_t)0x4002100C)
+    #define APB2CLKEN_ADDR     ((uint64_t)0x4002100C)
 
     void initialize_registers();
 

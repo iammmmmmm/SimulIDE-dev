@@ -22,7 +22,7 @@ class Register; // 前向声明，确保 BitFieldWriteCallback 可以引用 Regi
  * @param reg 寄存器自身的引用。
  * @param new_field_value 写入该位域的新的值。回调函数在此处执行该位域变化引起的副作用。
  */
-using BitFieldWriteCallback = std::function<void(Register &reg, uint32_t new_field_value)>;
+using BitFieldWriteCallback = std::function<void(Register &reg, uint32_t new_field_value,void *user_data)>;
 /**
  * @brief 位域级别的读取回调函数签名。
  *
@@ -33,7 +33,7 @@ using BitFieldWriteCallback = std::function<void(Register &reg, uint32_t new_fie
  */
 using BitFieldReadCallback = std::function<void(Register &reg,
                                                 const BitField &field,
-                                                uint32_t &field_value_to_read)>;
+                                                uint32_t &field_value_to_read,void *user_data)>;
 // =========================================================================
 // 1. 位域定义结构
 // =========================================================================
@@ -113,7 +113,7 @@ class Register {
     uint32_t get_offset() const { return m_offset; }
 
     // 模拟读取操作
-    uint32_t read() {
+    uint32_t read(void *user_data) {
       //位域级别读取回调
       for (const auto &field: m_fields) {
         if (field.read_callback) {
@@ -122,7 +122,7 @@ class Register {
           uint32_t field_value = (m_current_value & mask) >> field.start_bit;
 
           // 执行回调，回调可能会修改 field_value
-          field.read_callback(*this, field, field_value);
+          field.read_callback(*this, field, field_value,user_data);
 
           // 如果回调修改了值，则更新 m_current_value
           // 注意：有些位域读取后会清除标志位，所以需要更新 m_current_value
@@ -154,9 +154,9 @@ class Register {
     * * @param field_name 要读取的位域名称。
     * @return uint32_t 位域的值。如果位域不存在，返回 0 并输出警告。
     */
-    uint32_t get_field_value(const std::string &field_name) {
+    uint32_t get_field_value(const std::string &field_name,void *user_data) {
       // 1. 调用 read() 获取当前模拟的寄存器值，确保执行了所有回调。
-      uint32_t current_reg_value = read();
+      uint32_t current_reg_value = read(user_data);
 
       // 2. 查找位域定义
       const BitField *field = find_field(field_name);
@@ -198,7 +198,7 @@ class Register {
     }
 
     // 模拟写入操作
-    void write(uint32_t new_value) {
+    void write(uint32_t new_value,void *user_data) {
       const uint32_t old_value = m_current_value;
       uint32_t effective_value = old_value; // 从旧值开始，只修改允许被写入的部分
 
@@ -279,7 +279,7 @@ class Register {
 
         // 执行回调
         if (should_call && field.write_callback) {
-          field.write_callback(*this, callback_value);
+          field.write_callback(*this, callback_value,user_data);
         }
       }
       if (s_enable_debug_output) {
@@ -293,7 +293,7 @@ class Register {
    * @param field_name 要修改的位域名称。
    * @param new_field_value 要设置的位域值。
    */
-    void set_field_value(const std::string &field_name, uint32_t new_field_value) {
+    void set_field_value(const std::string &field_name, uint32_t new_field_value,void *user_data) {
       BitField *field = find_field(field_name);
       if (!field) {
         qDebug() << "Error: Field" << field_name.c_str() << "not found in register" << m_name.
@@ -339,7 +339,7 @@ class Register {
       }
 
       // 5. 调用完整的 write 方法来处理所有回调和读写限制。
-      this->write(value_to_write);
+      this->write(value_to_write,user_data);
 
       if (s_enable_debug_output) {
         qDebug().noquote() << QString("--- (原子写入) 字段 %1: %2 更新完成 ---")

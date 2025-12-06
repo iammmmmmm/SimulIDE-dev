@@ -389,7 +389,7 @@ void QemuDevice::hook_mem_wr(uc_engine *uc,uc_mem_type type,uint64_t address,int
 }
 bool QemuDevice::hook_code(uc_engine *uc, uint64_t address, uint32_t size, void *user_data) {
   //  qDebug() << "QemuDevice::hook_code(): address=" << Qt::hex << address << Qt::endl;
-    auto* device = static_cast<QemuDevice*>(user_data);
+    //auto* device = static_cast<QemuDevice*>(user_data);
 
     return true;
 }
