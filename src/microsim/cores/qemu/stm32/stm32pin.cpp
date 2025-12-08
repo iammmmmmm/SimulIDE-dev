@@ -105,6 +105,7 @@ void Stm32Pin::setAnalog( bool a ) /// TODO: if changing to Not Analog, return f
 
 void Stm32Pin::setPortState(  bool high ) // Set output from Port register
 {
+  //  qDebug()<<"Stm32Pin::setPortState high:"<<high<<"alternate"<<m_alternate;
     if( m_alternate ) return;
     setPinState( high );
 }
@@ -121,6 +122,8 @@ void Stm32Pin::scheduleState( bool high, uint64_t time )
 
 void Stm32Pin::setPinState( bool high ) // Set Output to Hight or Low
 {
+
+   // qDebug()<<"Stm32Pin::setPinState high:"<<high<<"alternate"<<m_alternate<<"m_pinMode"<<m_pinMode;
     m_outState = m_nextState = high;
     //if( m_pinMode < openCo  || m_stateZ ) return;
 
@@ -134,10 +137,12 @@ void Stm32Pin::setPinState( bool high ) // Set Output to Hight or Low
                 m_outVolt = high ? m_outHighV : m_outLowV;
                 ePin::stampCurrent( m_outVolt*m_pullAdmit );
             }
+           // qDebug()<<"Stm32Pin::setPinState input id:"<<m_id;
             break;
         case output:
             m_outVolt = high ? m_outHighV : m_outLowV;
             ePin::stampCurrent( m_outVolt*m_admit );
+            //qDebug()<<"Stm32Pin::setPinState outPut"<<m_outVolt;
             break;
         case openCo:
             m_gndAdmit = high ? 1/1e8 : 1/m_outputImp;

@@ -244,7 +244,8 @@ class Register {
 
     // 模拟写入操作
     void write(uint32_t new_value, int size, void *user_data) {
-      const uint32_t register_write_mask = (size >= 32) ? 0xFFFFFFFFU : ((1U << size) - 1);
+      const uint32_t bit_width = size * 8;
+      const uint32_t register_write_mask = (bit_width >= 32) ? 0xFFFFFFFFU : ((1U << bit_width) - 1);
 
       const uint32_t masked_new_value = new_value & register_write_mask;
 
@@ -322,6 +323,7 @@ class Register {
       }
       if (write_callback != nullptr) {
         const uint32_t register_callback_value = effective_value & register_write_mask;
+        //qDebug().noquote()<<"register_callback_value"<<register_callback_value;
         write_callback(*this, register_callback_value, user_data);
       }
 

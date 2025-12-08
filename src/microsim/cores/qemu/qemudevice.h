@@ -38,6 +38,7 @@ enum simuAction{
 enum class EventActionType {
     NONE = 0,
     GPIO_PIN_SET,
+    GPIO_CONFIG,
     //TODO
 };
 struct EventParams {
@@ -45,7 +46,12 @@ struct EventParams {
         struct {
             uint8_t port;
             uint8_t  next_state;
-        } gpio_data{};
+        } gpio_pin_set_data{};
+        struct {
+            uint8_t port;
+            uint32_t config;
+            uint8_t shift;
+        }gpio_config_data;
     };
     EventParams() {}
 };

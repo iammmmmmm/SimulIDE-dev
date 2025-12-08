@@ -294,7 +294,7 @@
     <message>
         <location filename="../../src/gui/appdialogs/appdialog.ui" line="1183"/>
         <source>Steps per Second    </source>
-        <translation>每秒步数    </translation>
+        <translation>每秒步长    </translation>
     </message>
     <message>
         <location filename="../../src/gui/appdialogs/appdialog.ui" line="1331"/>

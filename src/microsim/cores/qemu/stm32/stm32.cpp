@@ -134,6 +134,7 @@ void Stm32::runToTime(uint64_t time) {
             //TODO here need do somethings ?
             ps_per_inst = 125000.0;
         }
+        ps_per_inst=ps_per_inst*2.0;//mcu实际执行中需要各种等待flash什么的，所以做不到每周期一个指令。这是一个经验值
         target_instr_count = calculateInstructionsToExecute(time, last_target_time, ps_per_inst);
        timer.start();
         if (target_instr_count > 0) {
@@ -153,13 +154,20 @@ void Stm32::runToTime(uint64_t time) {
     }
 }
 void Stm32::runEvent() {
+    // 现在有个问题，就是时间是异步的，模拟器时间和mcu内部时间是异步，如果二者时间差超过一个值就会导致mcu发出的事件让模拟器时间回溯
+    //FIXME 所以就是得解决时间不同步问题
     while (!event_heap.empty()) {
        // qDebug()<<"stm32 runEvent:"<<Qt::endl;
         ScheduledEvent event = event_heap.top();
+       // qDebug()<<"Event:"<<event.scheduled_time<<"type"<<static_cast<int>(event.type)<<Qt::endl;
         event_heap.pop();
         switch (event.type) {
             case EventActionType::GPIO_PIN_SET: {
-                setPortState(event.params.gpio_data.port,event.params.gpio_data.next_state);
+                setPortState(event.params.gpio_pin_set_data.port,event.params.gpio_pin_set_data.next_state);
+            }
+                break;
+            case EventActionType::GPIO_CONFIG: {
+                cofigPort(event.params.gpio_config_data.port,event.params.gpio_config_data.config,event.params.gpio_config_data.shift);
             }
                 break;
             case EventActionType::NONE:
@@ -167,7 +175,17 @@ void Stm32::runEvent() {
                 std::cerr << "[ERROR] Unhandled or Invalid Event Type: " << static_cast<int>(event.type) << std::endl;
                 break;
         }
-
+       //  const auto uc=this->unicorn_emulator_ptr->get();
+       //  const auto currenPc=getCurrentPc()|1;
+       //  target_instr_count=target_instr_count-currenPc;
+       // if (target_instr_count > 0) {
+       //     uc_emu_start(uc,currenPc,0,0,target_instr_count-currenPc);
+       //  }
+       if (!event_heap.empty()&&this->eventTime==0) {
+            // uc_emu_stop(uc);
+            Simulator::self()->addEvent(event_heap.top().scheduled_time,this);
+        }
+      //  qDebug()<<"剩余evnt数:"<<event_heap.size()<<Qt::endl;
     }
 }
 
@@ -365,7 +383,7 @@ bool Stm32::hook_code(uc_engine *uc, uint64_t address, uint32_t size, void *user
 
 void Stm32::setPortState( uint8_t port, uint16_t state )
 {
-  //  qDebug() << "Stm32::setPortState,port:"<<port<<"state"<<Qt::hex<<state<<Qt::endl;
+   // qDebug() << "Stm32::setPortState,port:"<<port<<"state 0x"<<Qt::hex<<state<<Qt::endl;
     std::vector<Stm32Pin*> ioPort = m_ports[port-1]; //getPort( port );
 
     for( uint8_t i=0; i<ioPort.size(); ++i )
@@ -389,7 +407,7 @@ void Stm32::cofigPort( uint8_t port,  uint32_t config, uint8_t shift )
 {
     std::vector<Stm32Pin*> ioPort = m_ports[port-1]; //getPort( port );
 
-    //qDebug() << "Stm32::doAction GPIO_DIR Port:"<< port << "Directions:" << m_direction;
+    //qDebug() << "Stm32::cofigPort GPIO_DIR Port:"<< port <<"config"<<Qt::hex<<config<<"shift"<<shift<<Qt::endl ;
 
     for( uint8_t i=shift; i<shift+8; ++i )
     {
@@ -399,12 +417,13 @@ void Stm32::cofigPort( uint8_t port,  uint32_t config, uint8_t shift )
         uint32_t cfgBits = (config & cfgMask) >> cfgShift;
 
         uint8_t isOutput = cfgBits & 0b0011;  // 0 = Input
-
+       // qDebug()<<"Stm32::cofigPort is output:"<<isOutput<<"pin"<<i ;
         if( isOutput ) // Output
         {
             uint8_t   open = cfgBits & 0b0100;
             pinMode_t pinMode = open ? openCo : output;
             ioPin->setPinMode( pinMode );
+            //qDebug()<<"Stm32::cofigPort isOutput pinMode:"<<pinMode;
         }
         else          // Input
         {

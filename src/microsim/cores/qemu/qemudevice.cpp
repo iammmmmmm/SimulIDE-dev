@@ -76,6 +76,11 @@ void QemuDevice::schedule_event(uint64_t time, EventActionType type, EventParams
     new_event.type = type;
     new_event.params = params;
     event_heap.push(new_event);
+    if (this->eventTime==0) {
+      //  const auto uc=this->unicorn_emulator_ptr->get();
+        //uc_emu_stop(uc);
+        Simulator::self()->addEvent(time,this);
+    }
 }
 
 QemuDevice::QemuDevice( QString type, QString id )
@@ -401,7 +406,9 @@ void QemuDevice::hook_mem_wr(uc_engine *uc,uc_mem_type type,uint64_t address,int
 bool QemuDevice::hook_code(uc_engine *uc, uint64_t address, uint32_t size, void *user_data) {
   //  qDebug() << "QemuDevice::hook_code(): address=" << Qt::hex << address << Qt::endl;
     //auto* device = static_cast<QemuDevice*>(user_data);
-
+// while (!event_heap.empty()) {
+//     qDebug()<<"!event_heap.empty()=true";
+// }
     return true;
 }
 bool QemuDevice::hook_mem_unmapped(uc_engine *uc,uc_mem_type type,uint64_t address,int size,int64_t value,void *user_data) {

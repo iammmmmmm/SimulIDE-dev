@@ -551,7 +551,7 @@ void Simulator::addEvent( uint64_t time, eElement* el )
 
     if( el->eventTime ){
         m_warning = 200; //
-        //qDebug() << "Warning: Simulator::addEvent Repeated event"<<el->getId()<<el->eventTime<<time + m_circTime;
+        qDebug() << "Warning: Simulator::addEvent Repeated event"<<el->getId()<<el->eventTime<<time + m_circTime;
         return;
     }
 
