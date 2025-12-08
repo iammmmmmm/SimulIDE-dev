@@ -70,6 +70,13 @@ LibraryItem* QemuDevice::libraryItem()
         "QemuDevice",
         QemuDevice::construct );
 }
+void QemuDevice::schedule_event(uint64_t time, EventActionType type, EventParams params) {
+    ScheduledEvent new_event;
+    new_event.scheduled_time = time;
+    new_event.type = type;
+    new_event.params = params;
+    event_heap.push(new_event);
+}
 
 QemuDevice::QemuDevice( QString type, QString id )
           : Chip( type, id )
@@ -84,7 +91,8 @@ QemuDevice::QemuDevice( QString type, QString id )
                                , this, &QemuDevice::extraArgs, &QemuDevice::setExtraArgs )
     }, 0 } );
     unicorn_emulator_ptr=std::unique_ptr<UnicornEmulator>(new UnicornEmulator(arch,mode));
-   Register::set_debug_output(false);
+        //TODO set this
+    Register::set_debug_output(false);
 }
 QemuDevice::~QemuDevice()
 {
@@ -245,11 +253,7 @@ uint64_t QemuDevice::getCurrentPc() const {
 }
 void QemuDevice::runEvent()
 {
-    //qDebug() << "QemuDevice::runEvent"<< m_arena->simuAction<< Simulator::self()->circTime();
-    if( m_arena->simuAction < SIM_EVENT ) doAction();
-    //m_arena->simuAction = 0;
-    //m_arena->qemuTime = 0;       // Qemu will wait for next time
-    //m_arena->simuTime = 0;
+
 }
 
 void QemuDevice::slotOpenTerm( int num )
@@ -350,13 +354,20 @@ void QemuDevice::set_hooks() {
        static_cast<void*>(this),
        m_mem_params.PERIPHERAL_START,
        m_mem_params.PERIPHERAL_END);
+    //hook code带来的开销很大，但又必须知道”固件的当前时间“
+    /*一个办法是使用hook block，但是block不提供指令数，只有块大小
+     *      使用block 的话要么根据size 估算指令数，然后根据模拟器时间不断修正  精度差 性能好点 实现难度一般
+     *      或者自己反汇编计算block里的指令数 精度好 性能无法评估 很难实现
+     *          可以在模拟启动前预先烘焙一个”表格“，根据表格获取block里的指令数 精度好 性能好点 几乎难以实现
+     *
+     */
     uc_err = uc_hook_add(
            unicorn_emulator_ptr->get(),
            &hh_code,
            UC_HOOK_CODE,
            reinterpret_cast<void*>(hook_code_wappler),
            static_cast<void*>(this),
-           m_mem_params.FLASH_START,
+           0,
            m_mem_params.FLASH_START+m_mem_params.FLASH_SIZE);
     uc_err = uc_hook_add(
            unicorn_emulator_ptr->get(),
@@ -370,7 +381,7 @@ void QemuDevice::set_hooks() {
         qWarning() << "QemuDevice::set_hooks(): uc_err=" <<uc_strerror(uc_err)<< Qt::endl;
     }
 }
-void QemuDevice::hook_mem_wr(uc_engine *uc,uc_mem_type type,uint64_t address,int size,int64_t value,void *user_data) {
+void QemuDevice::hook_mem_wr(uc_engine *uc,uc_mem_type type,uint64_t address,int size,int64_t value,void *user_data) const {
     //qDebug()<<"QemuDevice::hook_mem_wr";
     auto* device = static_cast<QemuDevice*>(user_data);
     if (address>=device->m_mem_params.PERIPHERAL_START&&address<=device->m_mem_params.PERIPHERAL_END) {

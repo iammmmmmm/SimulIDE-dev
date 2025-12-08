@@ -70,7 +70,7 @@ bool Fmc::handle_write(uc_engine *uc, uint64_t address, int size, int64_t value,
   const auto offset = static_cast<uint32_t>(address - FMC_BASE_ADDR);
   if (m_registers.count(offset)) {
     const auto new_value = static_cast<uint32_t>(value);
-    m_registers[offset]->write(new_value,user_data);
+    m_registers[offset]->write(new_value,size, user_data);
   }else {
     qWarning().noquote() << QString("   [FMC W: 0x%1] 警告: 访问未注册寄存器!").arg(offset, 0, 16);
     return false;

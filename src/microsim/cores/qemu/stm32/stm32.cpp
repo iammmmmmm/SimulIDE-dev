@@ -125,22 +125,21 @@ void Stm32::runToTime(uint64_t time) {
     const auto rcm_ = dynamic_cast<stm32Rcm::Rcm*>(peripheral_registry->findDevice(RCM_BASE));
     if (rcm_) {
         QElapsedTimer timer;
-        uint64_t sys_freq = rcm_->getSysClockFrequency();
+        const uint64_t sys_freq = rcm_->getSysClockFrequency();
         double ps_per_inst;
         if (sys_freq > 0) {
             // 10^12 是 1 秒的皮秒数
-            ps_per_inst = 1e12 / static_cast<double>(sys_freq)*4.0;//实际mcu不能每时钟周期一指令，所以假设每指令要四时钟周期
+            ps_per_inst = 1e12 / static_cast<double>(sys_freq);
         } else {
             //TODO here need do somethings ?
-            ps_per_inst = 125000.0*4.0;
+            ps_per_inst = 125000.0;
         }
         target_instr_count = calculateInstructionsToExecute(time, last_target_time, ps_per_inst);
-        qDebug()<<"target_instr_count:"<<target_instr_count<<Qt::endl;
-        timer.start();
+       timer.start();
         if (target_instr_count > 0) {
             uc_err = uc_emu_start(unicorn_emulator_ptr->get(), target_instr_begin, 0, 0, target_instr_count);
         }
-        const uint64_t time_use=timer.elapsed();
+       const uint64_t time_use=timer.elapsed();
         if (uc_err != UC_ERR_OK) {
             //FIXME: TODO somthings
             qWarning()<<"void Stm32::runToTime(uint64_t time) uc err"<<uc_strerror(uc_err)<<"pc:"<<Qt::hex<<getCurrentPc()<<Qt::endl;
@@ -151,6 +150,24 @@ void Stm32::runToTime(uint64_t time) {
         target_instr_begin=getCurrentPc()|1;//// 将 LSB 置 1，告诉 Unicorn 下次从这个地址开始时使用Thumb 模式
     } else {
         qWarning() << "rcm peripheral not found for instruction calculation.";
+    }
+}
+void Stm32::runEvent() {
+    while (!event_heap.empty()) {
+       // qDebug()<<"stm32 runEvent:"<<Qt::endl;
+        ScheduledEvent event = event_heap.top();
+        event_heap.pop();
+        switch (event.type) {
+            case EventActionType::GPIO_PIN_SET: {
+                setPortState(event.params.gpio_data.port,event.params.gpio_data.next_state);
+            }
+                break;
+            case EventActionType::NONE:
+            default:
+                std::cerr << "[ERROR] Unhandled or Invalid Event Type: " << static_cast<int>(event.type) << std::endl;
+                break;
+        }
+
     }
 }
 
@@ -319,13 +336,13 @@ uint16_t Stm32::readInputs( uint8_t port )
 }
 bool Stm32::registerPeripheral() {
     peripheral_registry->registerDevice(std::make_unique<stm32Rcm::Rcm>());
-   // peripheral_registry->registerDevice(std::make_unique<stm32Fmc>());
+    peripheral_registry->registerDevice(std::make_unique<stm32Fmc::Fmc>());
     peripheral_registry->registerDevice(std::make_unique<Afio>());
     peripheral_registry->registerDevice(std::make_unique<stm32Gpio::Gpio>(GPIOA_BASE,"Port A"));
     peripheral_registry->registerDevice(std::make_unique<stm32Gpio::Gpio>(GPIOB_BASE,"Port B"));
     peripheral_registry->registerDevice(std::make_unique<stm32Gpio::Gpio>(GPIOC_BASE,"Port C"));
     peripheral_registry->registerDevice(std::make_unique<stm32Gpio::Gpio>(GPIOD_BASE,"Port D"));
-    peripheral_registry->registerDevice(std::make_unique<stm32Gpio::Gpio>(GPIOE_BASE,"Port E"));
+   peripheral_registry->registerDevice(std::make_unique<stm32Gpio::Gpio>(GPIOE_BASE,"Port E"));
     return true;
 }
 bool Stm32::hook_code(uc_engine *uc, uint64_t address, uint32_t size, void *user_data) {
@@ -333,59 +350,22 @@ bool Stm32::hook_code(uc_engine *uc, uint64_t address, uint32_t size, void *user
     const auto rcm_device = dynamic_cast<stm32Rcm::Rcm*>(stm32_instance->peripheral_registry->findDevice(RCM_BASE));
     rcm_device->run_tick(uc, address, size, user_data);
    //qDebug() << "Stm32::hook_code debug out "<<Qt::endl;
-        //
-    // if (address >= 0x8000000) {
-    //     uint64_t pc_val, lr_val;
-    //     uint32_t cpsr_val;
-    //
-    //     // 读取关键寄存器的值
-    //     uc_reg_read(uc, UC_ARM_REG_PC, &pc_val);
-    //     uc_reg_read(uc, UC_ARM_REG_LR, &lr_val);
-    //     uc_reg_read(uc, UC_ARM_REG_CPSR, &cpsr_val);
-    //     bool is_thumb = (cpsr_val & 0x20) != 0;
-    //     // 如果 T-bit 没有设置，直接发出警告，这可能是 INSN_INVALID 的原因
-    //     if (!is_thumb) {
-    //         qDebug().nospace() << "   @ CPSR: 0x" << QString::number(cpsr_val, 16).toUpper()
-    //                      << " | T-bit (bit 5): " << (is_thumb ? "SET (Thumb Mode)" : "CLEAR (ARM Mode)");
-    //         qDebug() << "   *** WARNING: T-bit is CLEAR! BL instruction requires Thumb Mode for decoding. ***";
-    //         qDebug() << "-----------------------------------------------";
-    //         qDebug() << "🎯 TRACE: Executing BL (Branch with Link) instruction";
-    //         qDebug().nospace() << "   @ PC: 0x" << QString::number(address, 16).toUpper()
-    //                            << " | Size: " << size << " bytes";
-    //         // 在指令执行之前，PC 应该是 0x80001ec。
-    //         // 如果 Hook 是 UC_HOOK_CODE，那么此时指令正准备执行。
-    //         // 如果 Hook 是 UC_HOOK_CODE_FOR_EXEC，那么此时指令已成功取指。
-    //         // 打印跳转目标和返回地址 (LR)
-    //         qDebug().nospace() << "   -> Target (APM_MINI_LEDInit): 0x" << QString::number(0x8000304, 16).toUpper();
-    //         qDebug().nospace() << "   -> Expected Return (LR): 0x" << QString::number(0x80001f0, 16).toUpper();
-    //     }
-    //     if (!is_thumb) {
-    //         // 1. 设置 T-bit (CPSR 第 5 位) 为 1
-    //         uint32_t new_cpsr = cpsr_val | 0x20;
-    //
-    //         // 2. 将修改后的 CPSR 值写回寄存器
-    //         if (uc_reg_write(uc, UC_ARM_REG_CPSR, &new_cpsr) == UC_ERR_OK) {
-    //             qDebug().nospace() << "   *** FIX: Successfully set T-bit to 1 (Thumb Mode). New CPSR: 0x"
-    //                                << QString::number(new_cpsr, 16).toUpper() << " ***";
-    //         } else {
-    //             qDebug() << "   *** ERROR: Failed to write new CPSR value! ***";
-    //         }
-    //     }
-    // }
+    //TODO del this before releass
+    if (address>GPIOA_BASE && address<GPIOE_BASE+300) {
+        Register::set_debug_output(true);
+    }else {
+        Register::s_enable_debug_output = false;
+    }
 
 
 
     return QemuDevice::hook_code( uc, address, size, user_data );
 }
-// bool hook_code(uc_engine *uc, uint64_t address, uint32_t size, void *user_data) {
-//     QemuDevice::hook_code( uc,  address,  size,  user_data);
-//     auto thisptr = static_cast<Stm32*>(user_data);
-//     thisptr->rcm->run_tick( uc,  address,  size,  user_data);
-//     return true;
-// }
+
 
 void Stm32::setPortState( uint8_t port, uint16_t state )
 {
+  //  qDebug() << "Stm32::setPortState,port:"<<port<<"state"<<Qt::hex<<state<<Qt::endl;
     std::vector<Stm32Pin*> ioPort = m_ports[port-1]; //getPort( port );
 
     for( uint8_t i=0; i<ioPort.size(); ++i )

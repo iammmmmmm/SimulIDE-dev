@@ -23,18 +23,22 @@ class Stm32 : public QemuDevice
         static LibraryItem* libraryItem();
         static Component* construct( QString type, QString id );
         void runToTime( uint64_t time ) override;
-    protected:
+        void runEvent() override;
+
+      protected:
+        void setPinState( uint8_t port, uint8_t pin, bool state );
+        void setPortState( uint8_t port, uint16_t state );
         Pin* addPin( QString id, QString type, QString label,
-                    int n, int x, int y, int angle , int length=8, int space=0 ) override;
+                     int n, int x, int y, int angle , int length=8, int space=0 ) override;
 
         void createPort( std::vector<Stm32Pin*>* port, uint8_t number, QString pId, uint8_t n );
         void createPins();
         void doAction() override;
-     void setupDeviceParams() override;
+
+        void setupDeviceParams() override;
         void cofigPort( uint8_t port,  uint32_t config, uint8_t shift );
 
-        void setPortState( uint8_t port, uint16_t state );
-        void setPinState( uint8_t port, uint8_t pin, bool state );
+
 
         uint16_t readInputs( uint8_t port );
 

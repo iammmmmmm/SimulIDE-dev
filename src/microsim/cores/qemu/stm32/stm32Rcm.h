@@ -61,8 +61,16 @@ class Rcm : public PeripheralDevice {
      uint64_t HSE_FREQ = 8000000; // 8MHz (外部晶振)
      uint64_t MAX_CPU_FREQ = 96000000; // 96MHz
   void runEvent() override;
-    bool isAHPB2ClockEnabled(string name);
-    bool isAHPBClockEnabled(string name);
-    bool isAHPB1ClockEnabled(string name);
+    bool isAHPB2ClockEnabled(std::string name);
+    bool isAHPBClockEnabled(std::string name);
+    bool isAHPB1ClockEnabled(const std::string& name);
+    uint64_t getMcuTime() {
+
+      return (m_clock_timing.rcm_ticks * 1000000000000ULL) / getSysClockFrequency();
+
+    }
+    uint64_t getRcmTicks() const {
+      return m_clock_timing.rcm_ticks;
+    }
 };
 }

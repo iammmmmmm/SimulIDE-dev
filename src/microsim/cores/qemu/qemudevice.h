@@ -7,6 +7,7 @@
 
 #include <QProcess>
 #include <QDebug>
+#include <queue>
 #include "chip.h"
 #include "unicorn/unicorn.h"
 #include "peripheral_factory.h"
@@ -34,7 +35,30 @@ enum simuAction{
     SIM_GPIO_IN,
     SIM_EVENT=1<<7
 };
-
+enum class EventActionType {
+    NONE = 0,
+    GPIO_PIN_SET,
+    //TODO
+};
+struct EventParams {
+    union {
+        struct {
+            uint8_t port;
+            uint8_t  next_state;
+        } gpio_data{};
+    };
+    EventParams() {}
+};
+struct ScheduledEvent {
+    uint64_t scheduled_time{};
+    EventActionType type = EventActionType::NONE;
+    EventParams params;
+};
+struct EventComparator {
+    bool operator()(const ScheduledEvent& a, const ScheduledEvent& b) const {
+        return a.scheduled_time > b.scheduled_time;
+    }
+};
 class IoPin;
 class QemuUsart;
 class QemuTimer;
@@ -75,10 +99,16 @@ class QemuDevice : public Chip
  static LibraryItem* libraryItem();
         //允许外设访问
         std::unique_ptr<PeripheralRegistry> peripheral_registry;
-
+        /**
+         * @brief 将一个新事件调度到指定的时间。
+         * * @param time 事件发生的绝对时间。
+         * @param type 事件类型。
+         * @param params 事件参数。
+         */
+        void schedule_event(uint64_t time, EventActionType type, EventParams params);
     protected:
  static QemuDevice* m_pSelf;
-
+       std::priority_queue<ScheduledEvent,std::vector<ScheduledEvent>,EventComparator> event_heap;
         virtual bool createArgs(){ return false;}
 
         virtual void doAction(){;}
@@ -144,7 +174,7 @@ class QemuDevice : public Chip
 
         virtual void setupDeviceParams(){};
         void set_hooks();
-        void hook_mem_wr(uc_engine *uc,uc_mem_type type,uint64_t address,int size,int64_t value,void *user_data);
+        void hook_mem_wr(uc_engine *uc,uc_mem_type type,uint64_t address,int size,int64_t value,void *user_data) const;
         static  void hook_mem_wr_wappler
         (uc_engine *uc,uc_mem_type type,uint64_t address,int size,int64_t value,void *user_data) {
             auto qemudevice = static_cast<QemuDevice*>(user_data);
@@ -155,7 +185,7 @@ class QemuDevice : public Chip
             auto qemudevice = static_cast<QemuDevice*>(user_data);
             return qemudevice->hook_code(uc,address,size,user_data);
         }
-        bool hook_mem_unmapped(uc_engine *uc,uc_mem_type type,uint64_t address,int size,int64_t value,void *user_data);
+        static bool hook_mem_unmapped(uc_engine *uc,uc_mem_type type,uint64_t address,int size,int64_t value,void *user_data);
         static  bool hook_mem_unmapped_wappler(uc_engine *uc,uc_mem_type type,uint64_t address,int size,int64_t value,void *user_data) {
             auto qemudevice = static_cast<QemuDevice*>(user_data);
             return qemudevice->hook_mem_unmapped(uc,type,address,size,value,user_data);

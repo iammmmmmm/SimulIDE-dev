@@ -10,30 +10,67 @@
 #include <functional>
 #include <QDebug>
 struct BitField;
-using namespace std;
 // =========================================================================
 // 0. 回调函数定义
 // =========================================================================
-class Register; // 前向声明，确保 BitFieldWriteCallback 可以引用 Register
-
+class Register;
+//FIXME 我们应该在这个玩意成为屎山之前或写了太多太多Reg之前尽量让这个问题少一点，不然下场会很惨
+//TODO 任何对于这个玩意的想法必须尽早实现，尽早测试完善，这里将会是地府大门
 /**
  * @brief 位域级别的写入回调函数签名。
- *
- * @param reg 寄存器自身的引用。
- * @param new_field_value 写入该位域的新的值。回调函数在此处执行该位域变化引起的副作用。
+ * * 此回调函数在特定位域的值被写入（修改）后执行，用于处理写入操作带来的副作用或进行特殊逻辑。
+该方法会在位域级别读写回调后调用
+ * * @param reg 寄存器自身的引用。
+ * @param field 被写入的位域结构体的引用。
+ * @param new_field_value 写入该位域的新的值（即位域的实际新值）。**回调函数在此处执行该位域变化引起的副作用。**
+ * @param user_data 用户自定义数据指针，用于传递额外的上下文信息。
  */
-using BitFieldWriteCallback = std::function<void(Register &reg, uint32_t new_field_value,void *user_data)>;
+using BitFieldWriteCallback = std::function<void(Register &reg,
+                                                 const BitField &field,
+                                                 uint32_t new_field_value,
+                                                 void *user_data)>;
+
 /**
  * @brief 位域级别的读取回调函数签名。
- *
- * @param reg 寄存器自身的引用。
+ * * 此回调函数在特定位域的值被读取前（或在读取值准备好后）执行，用于处理读取操作的副作用或修改即将返回的位域读取值。
+该方法会在位域级别读写回调后调用
+ * * @param reg 寄存器自身的引用。
  * @param field 被读取的位域结构体的引用。
  * @param field_value_to_read 对即将返回的该位域的值的引用。回调函数可以在这里修改返回值，
  * 例如清除状态位（如果该位域是写清零型状态位）或返回特殊的只读值。
+ * @param user_data 用户自定义数据指针，用于传递额外的上下文信息。
  */
 using BitFieldReadCallback = std::function<void(Register &reg,
                                                 const BitField &field,
-                                                uint32_t &field_value_to_read,void *user_data)>;
+                                                uint32_t &field_value_to_read,
+                                                void *user_data)>;
+/**
+ * @brief 寄存器级别的写入回调函数签名。
+ * * 此回调函数在整个寄存器的值被写入（修改）后执行，用于处理整个寄存器写入操作带来的副作用或进行特殊逻辑。
+该方法会先于寄存器级别读写回调前调用
+ * * @param reg 寄存器自身的引用。
+ * @param new_register_value 写入该寄存器的新的完整值（即寄存器的实际新值）。**回调函数在此处执行该寄存器变化引起的副作用。**
+ * @param user_data 用户自定义数据指针，用于传递额外的上下文信息。
+ */
+using RegisterWriteCallback = std::function<void(Register &reg,
+                                                 uint32_t new_register_value,
+                                                 void *user_data)>;
+
+
+/**
+ * @brief 寄存器级别的读取回调函数签名。
+ * * 此回调函数在整个寄存器的值被读取前（或在读取值准备好后）执行，用于处理读取操作的副作用（如清除状态位）或修改即将返回的读取值。
+该方法会先于寄存器级别读写回调前调用
+ * * @param reg 寄存器自身的引用。
+ * @param register_value_to_read 对即将返回的该寄存器值的引用。回调函数可以在这里修改返回值，
+ * 例如，可以实现读取清除（RC）类型的状态位逻辑。
+ * @param user_data 用户自定义数据指针，用于传递额外的上下文信息。
+ */
+using RegisterReadCallback = std::function<void(Register &reg,
+                                                uint32_t &register_value_to_read,
+                                                void *user_data)>;
+
+
 // =========================================================================
 // 1. 位域定义结构
 // =========================================================================
@@ -45,12 +82,12 @@ enum class BitFieldAccess {
   W0C // 写0清零 (Write 0 to Clear) - 写入 0 清除该位，写入 1 无影响 (较少见)
 };
 struct BitField {
-  string name; // 位域名称，如 "HIRCEN"
+  std::string name; // 位域名称，如 "HIRCEN"
   int start_bit; // 起始位 (从 0 开始)
   int width; // 宽度，对于单个位为 1
   BitFieldAccess access = BitFieldAccess::RW;
   // 存储位域值到描述的映射，例如 0->"关闭", 1->"打开"
-  map<uint32_t, string> value_descriptions;
+  std::map<uint32_t, std::string> value_descriptions;
   //当此位域被修改时执行的回调函数
   BitFieldWriteCallback write_callback = nullptr;
   BitFieldReadCallback read_callback = nullptr;
@@ -64,14 +101,16 @@ class Register {
   protected:
     uint32_t m_offset;
     uint32_t m_current_value = 0x00000000;
-    string m_name;
+    std::string m_name;
     std::map<std::string, BitField *> m_field_map;
 
   public:
+    RegisterWriteCallback write_callback = nullptr;
+    RegisterReadCallback read_callback = nullptr;
     // 存储该寄存器所有位域的定义
-    vector<BitField> m_fields;
+    std::vector<BitField> m_fields;
     static bool s_enable_debug_output;
-    Register(uint32_t offset, string name) : m_offset(offset), m_name(std::move(name)) {
+    Register(uint32_t offset, std::string name) : m_offset(offset), m_name(std::move(name)) {
     }
     /**
      * @brief 构建位域查找映射。必须在所有 BitField 都被添加到 m_fields 后调用。
@@ -87,6 +126,7 @@ class Register {
      * @param field_name 要查找的位域名称。
      * @return 找到的 BitField 引用指针，如果未找到则返回 nullptr。
      */
+    //TODO 再加一个map，建立name和指针的表，以空间换速度和开发人员的头发
     BitField *find_field(const std::string &field_name) {
       auto it = m_field_map.find(field_name);
       if (it != m_field_map.end()) {
@@ -97,7 +137,7 @@ class Register {
     /**
  * @brief 三参数构造函数，用于设置初始复位值
  */
-    Register(uint32_t offset, string name, uint32_t reset_value)
+    Register(uint32_t offset, std::string name, uint32_t reset_value)
       : m_offset(offset), m_current_value(reset_value), m_name(std::move(name)) {
     }
     virtual ~Register();
@@ -114,6 +154,8 @@ class Register {
 
     // 模拟读取操作
     uint32_t read(void *user_data) {
+      uint32_t simulated_value = m_current_value; // 默认返回当前内部值（可能已被位域回调修改）
+
       //位域级别读取回调
       for (const auto &field: m_fields) {
         if (field.read_callback) {
@@ -122,7 +164,7 @@ class Register {
           uint32_t field_value = (m_current_value & mask) >> field.start_bit;
 
           // 执行回调，回调可能会修改 field_value
-          field.read_callback(*this, field, field_value,user_data);
+          field.read_callback(*this, field, field_value, user_data);
 
           // 如果回调修改了值，则更新 m_current_value
           // 注意：有些位域读取后会清除标志位，所以需要更新 m_current_value
@@ -130,8 +172,10 @@ class Register {
           m_current_value = (m_current_value & ~mask) | (new_field_shifted & mask);
         }
       }
-      uint32_t simulated_value = m_current_value; // 默认返回当前内部值（可能已被位域回调修改）
-
+      //寄存器级别回调
+      if (read_callback != nullptr) {
+        read_callback(*this, simulated_value, user_data);
+      }
       // 处理只写 (WO) 属性：确保 WO 位的返回值是 0。
       for (const auto &field: m_fields) {
         if (field.access == BitFieldAccess::WO) {
@@ -140,6 +184,7 @@ class Register {
           simulated_value &= ~mask;
         }
       }
+
       // 读取调试输出
       if (s_enable_debug_output) {
         debug_interpret_read(simulated_value);
@@ -154,7 +199,7 @@ class Register {
     * * @param field_name 要读取的位域名称。
     * @return uint32_t 位域的值。如果位域不存在，返回 0 并输出警告。
     */
-    uint32_t get_field_value(const std::string &field_name,void *user_data) {
+    uint32_t get_field_value(const std::string &field_name, void *user_data) {
       // 1. 调用 read() 获取当前模拟的寄存器值，确保执行了所有回调。
       uint32_t current_reg_value = read(user_data);
 
@@ -193,78 +238,74 @@ class Register {
 
       return (m_current_value & mask) >> field->start_bit;
     }
-    string getName() {
+    std::string getName() {
       return m_name;
     }
 
     // 模拟写入操作
-    void write(uint32_t new_value,void *user_data) {
-      const uint32_t old_value = m_current_value;
-      uint32_t effective_value = old_value; // 从旧值开始，只修改允许被写入的部分
+    void write(uint32_t new_value, int size, void *user_data) {
+      const uint32_t register_write_mask = (size >= 32) ? 0xFFFFFFFFU : ((1U << size) - 1);
 
-      // 1. 根据位域访问权限计算实际写入的值 (effective_value)
+      const uint32_t masked_new_value = new_value & register_write_mask;
+
+      const uint32_t old_value = m_current_value;
+
+      uint32_t effective_value = old_value & (~register_write_mask);
+
       for (const auto &field: m_fields) {
-        const uint32_t mask = ((1U << field.width) - 1) << field.start_bit;
+        const uint32_t field_mask = ((1U << field.width) - 1) << field.start_bit;
+        const uint32_t effective_mask = field_mask & register_write_mask;
+        if (effective_mask == 0) {
+          continue;
+        }
         switch (field.access) {
           case BitFieldAccess::RO:
-            // 只读 (RO): 忽略写入。 effective_value 保留 old_value 的 RO 位。
-            // 因为 effective_value 初始化为 old_value，所以这里不需要操作。
+          case BitFieldAccess::W1C: {
+            effective_value = (effective_value & ~effective_mask) | (old_value & effective_mask);
             break;
-
+          }
           case BitFieldAccess::RW:
           case BitFieldAccess::WO:
-            // 读写 (RW) 或只写 (WO): 允许写入 new_value。
-            // 清除 effective_value 中的旧值，并设置 new_value 中的新值
-            effective_value = (effective_value & ~mask) | (new_value & mask);
+            effective_value = (effective_value & ~effective_mask) | (masked_new_value &
+              effective_mask);
             break;
 
-          case BitFieldAccess::W1C: {
-            // W1C 位的内部状态 (m_current_value) 不应被新写入的值影响。
-            // 它只负责触发副作用。
-            // 所以 effective_value 应该保持 old_value 在 W1C 位的状态，这里无需操作
-            break;
-          }
           case BitFieldAccess::W0C: {
-            // 写 0 清零 (W0C)
-            const uint32_t new_field_value = (new_value & mask) >> field.start_bit;
+            const uint32_t new_field_value = (masked_new_value & field_mask) >> field.start_bit;
+
+            effective_value = (effective_value & ~effective_mask) | (old_value & effective_mask);
 
             if (new_field_value == 0) {
-              // 如果写入的是 0，则清零 (设置 effective_value 中的该位为 0)
-              effective_value &= ~mask;
+              effective_value &= ~effective_mask;
             } else {
-              // 如果写入的是 1，则保持不变
             }
           }
-            break;
+          break;
         }
       }
-      // 更新内部值
       m_current_value = effective_value;
 
-      //  遍历位域，检查变更并执行回调
-      // 使用 auto& 遍历 m_fields，因为 write_callback 可能会在内部修改寄存器或其他状态
       for (auto &field: m_fields) {
-        // 计算掩码
-        const uint32_t mask = ((1U << field.width) - 1) << field.start_bit;
-        uint32_t callback_value = 0; // 传递给回调的值
+        const uint32_t field_mask = ((1U << field.width) - 1) << field.start_bit;
+        const uint32_t effective_mask = field_mask & register_write_mask;
+        uint32_t callback_value = 0;
+        if (effective_mask == 0) {
+          continue;
+        }
+
         bool should_call = false;
         switch (field.access) {
           case BitFieldAccess::RW:
           case BitFieldAccess::WO:
-            // RW/WO: 如果写入的值导致实际寄存器值发生变化，则触发回调。
-            // 提取更新后的寄存器值
-            callback_value = (effective_value & mask) >> field.start_bit;
-            // 只有当实际存储的值发生变化时才触发
-            if (((old_value & mask) >> field.start_bit) != callback_value) {
+            callback_value = (effective_value & field_mask) >> field.start_bit;
+            if (((old_value & effective_mask) >> field.start_bit) != ((effective_value &
+              effective_mask) >> field.start_bit)) {
               should_call = true;
             }
             break;
           case BitFieldAccess::W1C:
           case BitFieldAccess::W0C:
-            // W1C/W0C (触发性): 只要软件写入了非零/零值，就应触发回调。
-            // 提取软件尝试写入的值（即触发命令）
-            callback_value = (new_value & mask) >> field.start_bit;
-            // 检查 W1C: 写入 1 才触发。 检查 W0C: 写入 0 才触发。
+            callback_value = (masked_new_value & field_mask) >> field.start_bit;
             if (field.access == BitFieldAccess::W1C && callback_value == 1) {
               should_call = true;
             } else if (field.access == BitFieldAccess::W0C && callback_value == 0) {
@@ -273,17 +314,19 @@ class Register {
             break;
 
           case BitFieldAccess::RO:
-            // RO (只读): 写入不触发任何回调。
             break;
         }
-
-        // 执行回调
         if (should_call && field.write_callback) {
-          field.write_callback(*this, callback_value,user_data);
+          field.write_callback(*this, field, callback_value, user_data);
         }
       }
+      if (write_callback != nullptr) {
+        const uint32_t register_callback_value = effective_value & register_write_mask;
+        write_callback(*this, register_callback_value, user_data);
+      }
+
       if (s_enable_debug_output) {
-        debug_interpret_write(new_value);
+        debug_interpret_write(masked_new_value);
       }
     }
     /**
@@ -291,59 +334,46 @@ class Register {
     * * 注意：此方法会调用 Register::write()，会触发所有读回调和副作用。
     * * 模拟CPU/总线读取。
    * @param field_name 要修改的位域名称。
+   * @param size 数据大小
    * @param new_field_value 要设置的位域值。
    */
-    void set_field_value(const std::string &field_name, uint32_t new_field_value,void *user_data) {
+    void set_field_value(const std::string &field_name,
+                         int size,
+                         uint32_t new_field_value,
+                         void *user_data) {
       BitField *field = find_field(field_name);
       if (!field) {
         qDebug() << "Error: Field" << field_name.c_str() << "not found in register" << m_name.
             c_str();
         return;
       }
+      // 1. 获取当前寄存器值 (作为构造写入值的基准)
+      const uint32_t old_value = m_current_value;
 
-      // 1. 获取当前寄存器值
-      const uint32_t old_value = m_current_value; // 使用内部值进行计算
-
-      // 2. 计算掩码
+      // 2. 计算位域掩码
       const uint32_t mask = ((1U << field->width) - 1) << field->start_bit;
 
-      // 3. 检查新值是否在位域范围内
+      // 3. 检查新值是否在位域范围内 (可选的边界检查)
       if (new_field_value >= (1U << field->width)) {
         qDebug() << "Warning: Value" << new_field_value << "exceeds field" << field_name.c_str() <<
             "width" << field->width << "bits. Truncating.";
-        new_field_value = (1U << field->width) - 1; // 截断到最大值
+        new_field_value = (1U << field->width) - 1;
       }
 
-      // 4. 计算新的完整寄存器值：清除旧值，设置新值
+      // 4. 构造软件期望写入的完整 32 位值(value_to_write)
       const uint32_t new_field_shifted = new_field_value << field->start_bit;
 
-      // 注意：这里需要计算出一个完整的 32 位值，然后调用 write()
-      // RO, WO, W1C 逻辑将在 write() 内部处理。
-      // 对于 set_field_value 这种“原子”操作，我们只需要构造出目标位域被修改的完整值。
-
-      uint32_t value_to_write;
-      // 对于 W1C 位域，如果想清零（写入 1），构造值应为 1。如果想保持（写入 0），构造值应为 0。
-      if (field->access == BitFieldAccess::W1C) {
-        // 如果目标是让它变成 0 (清零)，则构造一个写入 1 的值
-        if (new_field_value == 0) {
-          value_to_write = (old_value & ~mask) | mask; // 构造一个在这个位域写入 1 的值
-        } else {
-          // W1C 位域不能通过写入来设置 1，所以如果尝试设置非 0 值，则忽略，调用 write(old_value)
-          // 为了简化并允许模拟器内部使用，我们先按普通写入处理，硬件的 W1C 逻辑由 write() 保证。
-          // 实际硬件中，W1C 位域通常只能被清零。这里允许写入，但实际效果由 write() 决定。
-          value_to_write = (old_value & ~mask) | (new_field_shifted & mask);
-        }
-      } else {
-        // 对于 RW/WO/RO 位域，构造出目标位域被修改的完整值
-        value_to_write = (old_value & ~mask) | (new_field_shifted & mask);
-      }
+      // value_to_write = (旧值 & ~目标位域掩码) | (新值 & 目标位域掩码)
+      // 这就是原子写入的构造方式，确保只修改目标位域。
+      const uint32_t value_to_write = (old_value & ~mask) | (new_field_shifted & mask);
 
       // 5. 调用完整的 write 方法来处理所有回调和读写限制。
-      this->write(value_to_write,user_data);
+      // write() 方法将负责处理 RO/WO/W1C/W0C 访问权限。
+      this->write(value_to_write, size, user_data);
 
       if (s_enable_debug_output) {
         qDebug().noquote() << QString("--- (原子写入) 字段 %1: %2 更新完成 ---")
-            .arg(m_name.c_str()).arg(field_name.c_str());
+            .arg(m_name.c_str(), field_name.c_str());
       }
     }
     /**
@@ -375,7 +405,8 @@ class Register {
       // 2. 清除旧值并设置新值
       m_current_value = (m_current_value & ~mask) | (new_field_shifted & mask);
       if (s_enable_debug_output) {
-        qDebug().noquote() << "模拟器内部写入字段：" << field_name.c_str() << "，值：0x"<<Qt::hex << new_field_shifted;
+        qDebug().noquote() << "模拟器内部写入字段：" << field_name.c_str() << "，值：0x" << Qt::hex <<
+            new_field_shifted;
       }
       // 注意：这里不执行 write 回调，也不执行 debug 输出，因为这是模拟的副作用，而不是一次真实地写操作。
     }
@@ -392,14 +423,14 @@ class Register {
       qDebug().noquote() << QString("  实际值: 0x%1") // 更改为 实际值
           .arg(value, 8, 16, QChar('0')); // Qt 格式化: 8位, 十六进制, 填充'0'
       // 获取寄存器内部的当前值 (在 write() 逻辑计算后, 但在 debug 输出前)
-    // 因为 debug_interpret_write 是在 m_current_value 被更新后调用的，所以此时 m_current_value 是最终结果。
-    const uint32_t internal_value = m_current_value;
+      // 因为 debug_interpret_write 是在 m_current_value 被更新后调用的，所以此时 m_current_value 是最终结果。
+      const uint32_t internal_value = m_current_value;
       for (const auto &field: m_fields) {
         // 计算掩码 (Mask)
         uint32_t mask = ((1U << field.width) - 1) << field.start_bit;
 
         // 提取该位域的值
-        uint32_t field_value ;
+        uint32_t field_value;
         if (field.access == BitFieldAccess::RO || field.access == BitFieldAccess::W1C) {
           // 对于 RO 位域（只读，写入被忽略）和 W1C 位域（写入不改变状态），
           // 应该显示其在寄存器中实际保留的值 (internal_value)。
@@ -416,14 +447,21 @@ class Register {
         // 标记访问权限
         QString access_str;
         switch (field.access) {
-          case BitFieldAccess::RO: access_str = "(RO)"; break;
-          case BitFieldAccess::WO: access_str = "(WO)"; break;
-          case BitFieldAccess::W1C: access_str = "(W1C)"; break;
-          case BitFieldAccess::RW: default: access_str = "(RW)"; break;
+          case BitFieldAccess::RO: access_str = "(RO)";
+            break;
+          case BitFieldAccess::WO: access_str = "(WO)";
+            break;
+          case BitFieldAccess::W1C: access_str = "(W1C)";
+            break;
+          case BitFieldAccess::RW: default: access_str = "(RW)";
+            break;
         }
 
         // 基础输出
-        QString output_line = QString("  > **位域 %1: %2 %3** ").arg(bit_range, field.name.c_str(), access_str);
+        QString output_line = QString("  > **位域 %1: %2 %3** ").arg(
+          bit_range,
+          field.name.c_str(),
+          access_str);
 
         // 查找描述信息
         if (field.value_descriptions.count(field_value)) {
@@ -463,13 +501,20 @@ class Register {
         // 标记访问权限
         QString access_str;
         switch (field.access) {
-          case BitFieldAccess::RO: access_str = "(RO)"; break;
-          case BitFieldAccess::WO: access_str = "(WO)"; break;
-          case BitFieldAccess::W1C: access_str = "(W1C)"; break;
-          case BitFieldAccess::RW: default: access_str = "(RW)"; break;
+          case BitFieldAccess::RO: access_str = "(RO)";
+            break;
+          case BitFieldAccess::WO: access_str = "(WO)";
+            break;
+          case BitFieldAccess::W1C: access_str = "(W1C)";
+            break;
+          case BitFieldAccess::RW: default: access_str = "(RW)";
+            break;
         }
         // 基础输出
-        QString output_line = QString("  > **位域 %1: %2 %3** ").arg(bit_range, field.name.c_str(), access_str);
+        QString output_line = QString("  > **位域 %1: %2 %3** ").arg(
+          bit_range,
+          field.name.c_str(),
+          access_str);
         // 查找描述信息
         if (field.value_descriptions.count(field_value)) {
           output_line += QString(" (当前值: %1) -> %2").arg(field_value)

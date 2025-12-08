@@ -34,7 +34,8 @@ class Gpio : public PeripheralDevice {
   std::map<uint32_t, std::unique_ptr<Register> > m_registers;
   std::string m_port_name; // 例如 "Port A", "Port B"
   uint64_t m_base_addr;    // 端口基地址
-  void initialize_registers(string portName);
+  uint8_t m_port;
+  void initialize_registers(const std::string& portName);
   // 检查 RCM 中对应 GPIO 端口的时钟是否开启
   bool is_clock_enabled(void *user_data) const;
 

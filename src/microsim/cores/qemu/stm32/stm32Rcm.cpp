@@ -1,7 +1,6 @@
 #include "stm32Rcm.h"
 #include <iomanip>
 #include <qlogging.h>
-#include <qtextstream.h>
 #include <unicorn/unicorn.h>
 #include "stm32.h"
 #include "Register.h"
@@ -44,7 +43,7 @@ void Rcm::initialize_registers() {
   m_registers[CSTS_OFFSET] = std::make_unique<CSTS_Register>(CSTS_OFFSET);
 
   m_registers[CTRL_OFFSET]->find_field("HSEEN")->write_callback= {
-    [this](Register &reg, uint32_t new_field_value,void *user_data) {
+    [this](Register &reg,const BitField &field,  uint32_t new_field_value,void *user_data) {
       if (new_field_value == 1) {
       //open hse
         m_clock_timing.hse_start_tick=m_clock_timing.rcm_ticks;
@@ -53,7 +52,7 @@ void Rcm::initialize_registers() {
     }
   };
   m_registers[CFG_OFFSET]->find_field("SYSCLKSEL")->write_callback= {
-    [](Register &reg, uint32_t new_field_value,void *user_data) {
+    [](Register &reg,const BitField &field,  uint32_t new_field_value,void *user_data) {
     reg.set_field_value_non_intrusive("SCLKSELSTS",new_field_value);
     }
   };
@@ -70,7 +69,7 @@ bool Rcm::handle_write(uc_engine *uc, uint64_t address, int size, int64_t value,
   const auto offset = static_cast<uint32_t>(address - RCM_BASE);
   if (m_registers.count(offset)) {
     const auto new_value = static_cast<uint32_t>(value);
-  m_registers[offset]->write(new_value,user_data);
+  m_registers[offset]->write(new_value,size, user_data);
   }else {
     qWarning().noquote() << QString("   [CMU W: 0x%1] 警告: 访问未注册寄存器!").arg(offset, 0, 16);
     return false;
@@ -154,7 +153,7 @@ void Rcm::runEvent() {
  * 如果为 0，则返回 false (时钟未使能)。
  *
  */
-bool Rcm::isAHPB2ClockEnabled(string name) {
+bool Rcm::isAHPB2ClockEnabled(std::string name) {
     return m_registers[APB2CLKEN_OFFSET]->get_field_value_non_intrusive(name);
 }
 /**
@@ -167,7 +166,7 @@ bool Rcm::isAHPB2ClockEnabled(string name) {
  * 如果为 0，则返回 false (时钟未使能)。
  *
 */
-bool Rcm::isAHPBClockEnabled(string name) {
+bool Rcm::isAHPBClockEnabled(std::string name) {
   return m_registers[AHBCLKEN_OFFSET]->get_field_value_non_intrusive(name);
 }
 /**
@@ -180,7 +179,7 @@ bool Rcm::isAHPBClockEnabled(string name) {
  * 如果为 0，则返回 false (时钟未使能)。
  *。
  */
-bool Rcm::isAHPB1ClockEnabled(string name) {
+bool Rcm::isAHPB1ClockEnabled(const std::string& name) {
   return m_registers[APB1CLKEN_OFFSET]->get_field_value_non_intrusive(name);
 }
 /**
@@ -193,25 +192,25 @@ bool Rcm::isAHPB1ClockEnabled(string name) {
  * 返回值会被限制在 MAX_CPU_FREQ 范围内，以模拟芯片的最高运行频率限制。
  *
  */
+//FIXME 这个玩意似乎有问题，算不出来正确值，目前一直是返回HSI的值好像
 uint64_t Rcm::getSysClockFrequency()  {
   uint32_t sysclk_sel = m_registers[CFG_OFFSET]->get_field_value_non_intrusive("SYSCLKSEL");
   // 获取 SYSCLKSEL (RCM_CFG Bit 0-1)
 
-
   // 1. HSI 作为系统时钟 (SYSCLKSEL = 00)
-  if (sysclk_sel == 0b00) {
+  if (sysclk_sel == 0) {
     return HSI_FREQ;
   }
   // 2. HSE 作为系统时钟 (SYSCLKSEL = 01)
-  if (sysclk_sel == 0b01) {
+  if (sysclk_sel == 01) {
     return HSE_FREQ;
   }
   // 3. PLL 作为系统时钟 (SYSCLKSEL = 10)
-  if (sysclk_sel == 0b10) {
+  if (sysclk_sel == 10) {
     // --- 计算 PLL 输入频率 ---
     uint64_t pll_input_freq = 0;
-    uint32_t pll_src_sel = m_registers[CFG_OFFSET]->get_field_value_non_intrusive("PLLSRCSEL");
-    uint32_t pll_hse_psc = m_registers[CFG_OFFSET]->get_field_value_non_intrusive("PLLHSEPSC");
+    const uint32_t pll_src_sel = m_registers[CFG_OFFSET]->get_field_value_non_intrusive("PLLSRCSEL");
+    const uint32_t pll_hse_psc = m_registers[CFG_OFFSET]->get_field_value_non_intrusive("PLLHSEPSC");
 
     if (pll_src_sel == 0) {
       // HSI 作为 PLL 源
@@ -227,14 +226,14 @@ uint64_t Rcm::getSysClockFrequency()  {
     }
 
     // --- 计算 PLL 倍频系数 N ---
-    uint32_t pll_mul_cfg =m_registers[CFG_OFFSET]->get_field_value_non_intrusive("PLLMULCFG");
+    const uint32_t pll_mul_cfg =m_registers[CFG_OFFSET]->get_field_value_non_intrusive("PLLMULCFG");
     // APM32F103 的 PLL 倍频系数通常是 (N+2)
     // pll_mul_cfg = 0b0000 -> x2, 0b1110 -> x16
     // PLLMULCFG 0b0000 对应 x2, 0b0001 对应 x3, ..., 0b1110 对应 x16。
-    uint32_t N = pll_mul_cfg + 2;
+    const uint32_t N = pll_mul_cfg + 2;
 
     // --- 计算 PLL 输出频率 ---
-    uint64_t pll_output_freq = pll_input_freq * N;
+    const uint64_t pll_output_freq = pll_input_freq * N;
     // 确保频率不超过芯片限制 (eg: 96MHz MAX)
     return std::min(pll_output_freq, MAX_CPU_FREQ);
   }
