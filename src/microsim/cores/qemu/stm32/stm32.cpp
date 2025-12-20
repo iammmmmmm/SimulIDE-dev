@@ -97,6 +97,7 @@ Stm32::Stm32( QString type, QString id, QString device )
 
     //m_timers.resize( m_timerN );
     //for( int i=0; i<m_timerN; ++i ) m_timers[i] = new QemuTimer( this, "Timer"+QString::number(i), i );
+
 }
 Stm32::~Stm32(){}
 
@@ -121,7 +122,7 @@ Component * Stm32::construct(QString type, QString id) {
     QString device = Chip::getDevice( id );
     return new Stm32( type, id, device );
 }
-void Stm32::runToTime(uint64_t time) {
+void Stm32::runToTime(const uint64_t time) {
     const auto rcm_ = dynamic_cast<stm32Rcm::Rcm*>(peripheral_registry->findDevice(RCM_BASE));
     if (rcm_) {
         QElapsedTimer timer;
@@ -147,7 +148,7 @@ void Stm32::runToTime(uint64_t time) {
             qWarning()<<"void Stm32::runToTime(uint64_t time) uc err"<<uc_strerror(uc_err)<<"pc:"<<Qt::hex<<getCurrentPc()<<Qt::endl;
             Simulator::self()->stopSim();
         }
-        qDebug()<<"run to time:"<<time<<" "<<uc_strerror(uc_err)<<"target_instr_count:"<<target_instr_count<<"use time:"<<time_use<<"ms"<<Qt::endl;
+        qDebug()<<"run to time:"<<time<<"mcu freq"<<sys_freq<<" "<<uc_strerror(uc_err)<<"target_instr_count:"<<target_instr_count<<"use time:"<<time_use<<"ms"<<Qt::endl;
         last_target_time = time;
         target_instr_begin=getCurrentPc()|1;//// 将 LSB 置 1，告诉 Unicorn 下次从这个地址开始时使用Thumb 模式
     } else {
@@ -368,15 +369,27 @@ bool Stm32::hook_code(uc_engine *uc, uint64_t address, uint32_t size, void *user
     const auto stm32_instance = static_cast<Stm32*>(user_data);
     const auto rcm_device = dynamic_cast<stm32Rcm::Rcm*>(stm32_instance->peripheral_registry->findDevice(RCM_BASE));
     rcm_device->run_tick(uc, address, size, user_data);
-   //qDebug() << "Stm32::hook_code debug out "<<Qt::endl;
-    //TODO del this before releass
-    if (address>GPIOA_BASE && address<GPIOE_BASE+300) {
-        Register::set_debug_output(true);
-    }else {
-        Register::s_enable_debug_output = false;
+    if (address == 0x0800027c) { // 读取动作发生的那一刻
+        uint32_t r3_addr;
+        uc_reg_read(uc, UC_ARM_REG_R3, &r3_addr);
+        qDebug() << "[Trace] 指令 0800027c 即将从地址:" << Qt::hex << r3_addr << "读取数据";
     }
 
+    if (address == 0x08000282) { // 也就是你现在的判断点
+        uint32_t r3_val;
+        uc_reg_read(uc, UC_ARM_REG_R3, &r3_val);
 
+        // 强制从底层内存再读一次，对比一下
+        uint32_t mem_val = 0;
+        uc_mem_read(uc, 0x40021000, &mem_val, 4);
+
+        qDebug() << "[Compare] CPU寄存器 R3:" << Qt::hex << r3_val;
+        qDebug() << "[Compare] 内存地址 40021000 实际值:" << Qt::hex << mem_val;
+
+        if (r3_val != mem_val) {
+            qDebug() << "!!! [ERROR] 发现寄存器与内存不一致！读取过程可能被拦截或重定向了。";
+        }
+    }
 
     return QemuDevice::hook_code( uc, address, size, user_data );
 }

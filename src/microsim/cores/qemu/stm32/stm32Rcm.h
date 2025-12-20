@@ -43,8 +43,8 @@ class Rcm : public PeripheralDevice {
     struct {
       uint64_t hse_start_tick = 0; // HSE 启动时的 CPU 周期计数
       uint64_t pll_start_tick = 0; // PLL 启动时的 CPU 周期计数
-      const uint64_t HSE_DELAY_TICKS = 1000; // 假设 HSE 稳定需要这么久
-      const uint64_t PLL_DELAY_TICKS = 750;  // 假设 PLL 稳定需要这么久
+      const uint64_t HSE_DELAY_TICKS = 1; // 假设 HSE 稳定需要这么久
+      const uint64_t PLL_DELAY_TICKS = 1;  // 假设 PLL 稳定需要这么久
       uint64_t rcm_ticks = 0;
     } m_clock_timing;
   public:

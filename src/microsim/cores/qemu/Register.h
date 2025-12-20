@@ -103,13 +103,13 @@ class Register {
     uint32_t m_current_value = 0x00000000;
     std::string m_name;
     std::map<std::string, BitField *> m_field_map;
+    bool s_enable_debug_output=false;
 
   public:
     RegisterWriteCallback write_callback = nullptr;
     RegisterReadCallback read_callback = nullptr;
     // 存储该寄存器所有位域的定义
     std::vector<BitField> m_fields;
-    static bool s_enable_debug_output;
     Register(uint32_t offset, std::string name) : m_offset(offset), m_name(std::move(name)) {
     }
     /**
@@ -141,8 +141,8 @@ class Register {
       : m_offset(offset), m_current_value(reset_value), m_name(std::move(name)) {
     }
     virtual ~Register();
-    // 设置全局调试开关
-    static void set_debug_output(bool enable) {
+    // 设置调试开关
+    void set_debug_output(const bool enable) {
       s_enable_debug_output = enable;
     }
     // // 设置寄存器级别的读取回调

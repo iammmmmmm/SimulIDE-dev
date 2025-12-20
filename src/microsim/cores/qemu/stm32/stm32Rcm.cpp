@@ -16,6 +16,7 @@ Rcm::Rcm() {
   // 调用初始化函数设置复位值
   initialize_registers();
   qDebug("[RCM] peripheral initialized at base address %x", RCM_BASE);
+
 }
 
 // 寄存器初始化
@@ -47,7 +48,16 @@ void Rcm::initialize_registers() {
       if (new_field_value == 1) {
       //open hse
         m_clock_timing.hse_start_tick=m_clock_timing.rcm_ticks;
-      //  qDebug()<<"[RCM] mcu固件请求打开 HSE 时钟,在内部ticks："<<m_clock_timing.rcm_ticks<<Qt::endl;
+        qDebug()<<"[RCM] mcu固件请求打开 HSE 时钟,在内部ticks："<<m_clock_timing.rcm_ticks<<Qt::endl;
+      }
+    }
+  };
+  m_registers[CTRL_OFFSET]->find_field("PLLEN")->write_callback= {
+    [this](Register &reg,const BitField &field,  uint32_t new_field_value,void *user_data) {
+      if (new_field_value == 1) {
+        //open pll
+        m_clock_timing.pll_start_tick=m_clock_timing.rcm_ticks;
+        qDebug()<<"[RCM] mcu固件请求打开 PLL ,在内部ticks："<<m_clock_timing.rcm_ticks<<Qt::endl;
       }
     }
   };
@@ -56,6 +66,11 @@ void Rcm::initialize_registers() {
     reg.set_field_value_non_intrusive("SCLKSELSTS",new_field_value);
     }
   };
+m_registers[CFG_OFFSET]->write_callback= {
+  [this](Register &reg,uint32_t new_register_value,void *user_data) {
+    qDebug()<<"[RCM] mcu固件写RCM CFG寄存器："<<Qt::hex<<new_register_value;
+  }
+};
 }
 
 // 处理写入操作
@@ -70,6 +85,12 @@ bool Rcm::handle_write(uc_engine *uc, uint64_t address, int size, int64_t value,
   if (m_registers.count(offset)) {
     const auto new_value = static_cast<uint32_t>(value);
   m_registers[offset]->write(new_value,size, user_data);
+    // 强制打印 RCM_CTRL (0x00) 的所有写入
+    if (offset == 0x00) {
+      qDebug() << "[RCM RAW] CTRL Write: 0x" << Qt::hex << new_value
+               << " | PLL1EN bit:" << ((new_value >> 24) & 1)
+               << " | PLL2EN bit:" << ((new_value >> 26) & 1);
+    }
   }else {
     qWarning().noquote() << QString("   [CMU W: 0x%1] 警告: 访问未注册寄存器!").arg(offset, 0, 16);
     return false;
@@ -116,20 +137,16 @@ void Rcm::run_tick(uc_engine *uc, uint64_t address, uint32_t size, void *user_da
   //   qDebug("[RCM] Run tick at 0x%x rcm_ticks:%llu" , static_cast<unsigned>(address),m_clock_timing.rcm_ticks);
   // }
 
-  // 检查 HSE 启动是否完成
+  //  HSE 启动等待实现
   if (m_clock_timing.hse_start_tick != 0) {
     const uint64_t elapsed_ticks = m_clock_timing.rcm_ticks - m_clock_timing.hse_start_tick;
-
     // 时钟就绪标志应在延迟时间结束后设置
     if (elapsed_ticks >= m_clock_timing.HSE_DELAY_TICKS) {
-
       // 1. 设置 HSE Ready 标志位 (HSERDYFLG)
       m_registers[CTRL_OFFSET]->set_field_value_non_intrusive("HSERDYFLG", 1);
-
       // 2. 清除启动追踪标记
       m_clock_timing.hse_start_tick = 0;
-
-    //  qDebug() << "[RCM] HSE 启动完成。HSERDYFLG 已置位 1。";
+      qDebug() << "[RCM] HSE 启动完成。HSERDYFLG 已置位 1。 在ticks："<<getRcmTicks();
 
       // // 3. 检查 HSI Ready 中断是否启用 (HSERDYFLG 在 RCM_INT 寄存器中)
       // if (m_registers[RCM_INT_OFFSET]->get_field_value_non_intrusive("HSERDYFLG") == 1) {
@@ -137,6 +154,15 @@ void Rcm::run_tick(uc_engine *uc, uint64_t address, uint32_t size, void *user_da
       //   m_registers[RCM_INT_OFFSET]->set_field_value_non_intrusive("HSERDYFLG", 1);
       //   qDebug() << "[RCM] HSI Ready 中断标志 (HSERDYFLG) 已置位。";
       // }
+    }
+  }
+  //  PLL 启动等待实现
+  if (m_clock_timing.pll_start_tick!= 0) {
+    const uint64_t elapsed_ticks = m_clock_timing.rcm_ticks - m_clock_timing.pll_start_tick;
+    if (elapsed_ticks>=m_clock_timing.PLL_DELAY_TICKS) {
+      m_registers[CTRL_OFFSET]->set_field_value_non_intrusive("PLLRDYFLG", 1);
+      m_clock_timing.pll_start_tick = 0;
+      qDebug()<<"[RCM] PLL 启动完成。PLLRDYFLG 已置位1.";
     }
   }
 }
@@ -192,51 +218,49 @@ bool Rcm::isAHPB1ClockEnabled(const std::string& name) {
  * 返回值会被限制在 MAX_CPU_FREQ 范围内，以模拟芯片的最高运行频率限制。
  *
  */
-//FIXME 这个玩意似乎有问题，算不出来正确值，目前一直是返回HSI的值好像
-uint64_t Rcm::getSysClockFrequency()  {
+uint64_t Rcm::getSysClockFrequency() {
+  // 获取 SYSCLKSEL (通常为 2 bits)
   uint32_t sysclk_sel = m_registers[CFG_OFFSET]->get_field_value_non_intrusive("SYSCLKSEL");
-  // 获取 SYSCLKSEL (RCM_CFG Bit 0-1)
 
-  // 1. HSI 作为系统时钟 (SYSCLKSEL = 00)
+  // 1. HSI 作为系统时钟 (SYSCLKSEL = 0)
   if (sysclk_sel == 0) {
     return HSI_FREQ;
   }
-  // 2. HSE 作为系统时钟 (SYSCLKSEL = 01)
-  if (sysclk_sel == 01) {
+
+  // 2. HSE 作为系统时钟 (SYSCLKSEL = 1)
+  if (sysclk_sel == 1) {
     return HSE_FREQ;
   }
-  // 3. PLL 作为系统时钟 (SYSCLKSEL = 10)
-  if (sysclk_sel == 10) {
-    // --- 计算 PLL 输入频率 ---
+
+  // 3. PLL 作为系统时钟 (SYSCLKSEL = 2, 二进制 10)
+  if (sysclk_sel == 2) {
     uint64_t pll_input_freq = 0;
     const uint32_t pll_src_sel = m_registers[CFG_OFFSET]->get_field_value_non_intrusive("PLLSRCSEL");
     const uint32_t pll_hse_psc = m_registers[CFG_OFFSET]->get_field_value_non_intrusive("PLLHSEPSC");
 
     if (pll_src_sel == 0) {
-      // HSI 作为 PLL 源
-      // HSI (8MHz) -> /2 分频器
+      // HSI / 2 作为 PLL 源
       pll_input_freq = HSI_FREQ / 2;
     } else {
       // HSE 作为 PLL 源
       pll_input_freq = HSE_FREQ;
       if (pll_hse_psc == 1) {
-        // PLLHSEPSC = 1 -> /2 分频
         pll_input_freq /= 2;
       }
     }
 
-    // --- 计算 PLL 倍频系数 N ---
-    const uint32_t pll_mul_cfg =m_registers[CFG_OFFSET]->get_field_value_non_intrusive("PLLMULCFG");
-    // APM32F103 的 PLL 倍频系数通常是 (N+2)
-    // pll_mul_cfg = 0b0000 -> x2, 0b1110 -> x16
-    // PLLMULCFG 0b0000 对应 x2, 0b0001 对应 x3, ..., 0b1110 对应 x16。
-    const uint32_t N = pll_mul_cfg + 2;
+    // 计算 PLL 倍频系数
+    const uint32_t pll_mul_cfg = m_registers[CFG_OFFSET]->get_field_value_non_intrusive("PLLMULCFG");
 
-    // --- 计算 PLL 输出频率 ---
-    const uint64_t pll_output_freq = pll_input_freq * N;
-    // 确保频率不超过芯片限制 (eg: 96MHz MAX)
+    uint32_t multiplier = pll_mul_cfg + 2;
+    if (multiplier > 16) multiplier = 16; // 限制最大倍频
+
+    const uint64_t pll_output_freq = pll_input_freq * multiplier;
+
+    // 针对某些芯片（如 APM32），可能还有 PLL 后的再分频，如果此处就是 SYSCLK，直接返回
     return std::min(pll_output_freq, MAX_CPU_FREQ);
   }
-  // 默认或复位状态 (默认为 HSICLK)
+
+  // 4. 这里的处理非常重要：如果 sysclk_sel 为 3 (二进制 11)，通常是不可用的或特定的时钟
   return HSI_FREQ;
 }

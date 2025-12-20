@@ -95,9 +95,8 @@ QemuDevice::QemuDevice( QString type, QString id )
         new StrProp<QemuDevice>("Args", tr("Extra arguments"),""
                                , this, &QemuDevice::extraArgs, &QemuDevice::setExtraArgs )
     }, 0 } );
-    unicorn_emulator_ptr=std::unique_ptr<UnicornEmulator>(new UnicornEmulator(arch,mode));
-        //TODO set this
-    Register::set_debug_output(false);
+    unicorn_emulator_ptr=std::make_unique<UnicornEmulator>(arch,mode);
+
 }
 QemuDevice::~QemuDevice()
 {
@@ -420,6 +419,7 @@ bool QemuDevice::registerPeripheral() {
     return false;
 }
 bool QemuDevice::loadFirmware() {
+    //FIXME: 文件不存在时没法检测到，不会报错，也不会中止无效的模拟启动...<(＿　＿)>
     std::ifstream file(m_firmware.toStdString(), std::ios::binary | std::ios::ate);
     if (!file.is_open()) {
         qWarning() << " ERROR UNABLE TO OPEN FIRMWARE FILE" << m_firmware<< Qt::endl;
@@ -427,7 +427,7 @@ bool QemuDevice::loadFirmware() {
         return false;
     }
 
-    std::streamsize size = file.tellg();
+    const std::streamsize size = file.tellg();
     file.seekg(0, std::ios::beg);
     std::vector<uint8_t> buffer(size);
 
