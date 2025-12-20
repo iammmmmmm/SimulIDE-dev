@@ -43,8 +43,8 @@ class Rcm : public PeripheralDevice {
     struct {
       uint64_t hse_start_tick = 0; // HSE 启动时的 CPU 周期计数
       uint64_t pll_start_tick = 0; // PLL 启动时的 CPU 周期计数
-      const uint64_t HSE_DELAY_TICKS = 1000; // 假设 HSE 需要
-      const uint64_t PLL_DELAY_TICKS = 750;  // 假设 PLL 需要
+      const uint64_t HSE_DELAY_TICKS = 1000; // 假设 HSE 稳定需要这么久
+      const uint64_t PLL_DELAY_TICKS = 750;  // 假设 PLL 稳定需要这么久
       uint64_t rcm_ticks = 0;
     } m_clock_timing;
   public:
@@ -65,8 +65,15 @@ class Rcm : public PeripheralDevice {
     bool isAHPBClockEnabled(std::string name);
     bool isAHPB1ClockEnabled(const std::string& name);
     uint64_t getMcuTime() {
-
-      return (m_clock_timing.rcm_ticks * 1000000000000ULL) / getSysClockFrequency();
+      const uint64_t freq = getSysClockFrequency();
+      const uint64_t ticks = m_clock_timing.rcm_ticks;
+      const uint64_t seconds = ticks / freq;
+      const uint64_t remainder = ticks % freq;
+      const unsigned __int128 wide_remainder = static_cast<unsigned __int128>(remainder) * 1000000000000ULL;
+      const auto remainder_ps = static_cast<uint64_t>(wide_remainder / freq);
+      //to see Stm32::runToTime,二者含义一样，都是来自经验的魔法值
+      return ((seconds * 1000000000000ULL) + remainder_ps)*2;
+     // return (m_clock_timing.rcm_ticks * 1000000000000ULL) / getSysClockFrequency();
 
     }
     uint64_t getRcmTicks() const {

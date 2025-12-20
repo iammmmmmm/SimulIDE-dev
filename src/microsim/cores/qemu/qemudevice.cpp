@@ -238,17 +238,14 @@ uint64_t QemuDevice::calculateInstructionsToExecute(uint64_t target_time_ps,uint
     if (target_time_ps <= current_time_ps) {
         return 0;
     }
-    uint64_t delta_time_ps = target_time_ps - current_time_ps;
-    if (ps_per_inst <= 0.0) {
-        qWarning() << "ps_per_inst is zero or negative! Cannot calculate instruction count."<<Qt::endl;
+    const uint64_t delta_time_ps = target_time_ps - current_time_ps;
+    if (ps_per_inst < 1.0) {
+        qWarning() << "ps_per_inst is too small! Check frequency calculation.";
         return 0;
     }
-
     const double instructions_double = static_cast<double>(delta_time_ps) / ps_per_inst;
-    const auto instructions_count = static_cast<uint64_t>(instructions_double);
-
-    // 为了确保至少运行一步，如果时间差非零但结果为0，可以返回1。
-    // 但通常在模拟中，让浮点数计算精确到0即可。
+    const auto instructions_count = static_cast<uint64_t>(std::round(instructions_double));
+    // 如果计算出 0 但时间差很大，可能需要关注
     return instructions_count;
 }
 uint64_t QemuDevice::getCurrentPc() const {
@@ -415,7 +412,7 @@ bool QemuDevice::hook_mem_unmapped(uc_engine *uc,uc_mem_type type,uint64_t addre
     uint32_t current_pc;
     uc_reg_read(uc, UC_ARM_REG_PC, &current_pc);
     qWarning() << "QemuDevice::hook_mem_unmapped(): current_pc="<<Qt::hex << current_pc<< Qt::endl;
-    //也许我们需要做一些事情？
+    //Maybe we need to do something?
     return false;
 }
 bool QemuDevice::registerPeripheral() {

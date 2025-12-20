@@ -134,6 +134,7 @@ void Stm32::runToTime(uint64_t time) {
             //TODO here need do somethings ?
             ps_per_inst = 125000.0;
         }
+        //TODO 2.0有点太大，有的时候1.0~1.5，考虑根据固件行为优化这个
         ps_per_inst=ps_per_inst*2.0;//mcu实际执行中需要各种等待flash什么的，所以做不到每周期一个指令。这是一个经验值
         target_instr_count = calculateInstructionsToExecute(time, last_target_time, ps_per_inst);
        timer.start();
