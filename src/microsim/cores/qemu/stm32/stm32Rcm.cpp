@@ -66,11 +66,11 @@ void Rcm::initialize_registers() {
     reg.set_field_value_non_intrusive("SCLKSELSTS",new_field_value);
     }
   };
-m_registers[CFG_OFFSET]->write_callback= {
-  [this](Register &reg,uint32_t new_register_value,void *user_data) {
-    qDebug()<<"[RCM] mcu固件写RCM CFG寄存器："<<Qt::hex<<new_register_value;
-  }
-};
+// m_registers[CFG_OFFSET]->write_callback= {
+//   [this](Register &reg,uint32_t new_register_value,void *user_data) {
+//     //qDebug()<<"[RCM] mcu固件写RCM CFG寄存器："<<Qt::hex<<new_register_value;
+//   }
+// };
 }
 
 // 处理写入操作
@@ -85,12 +85,6 @@ bool Rcm::handle_write(uc_engine *uc, uint64_t address, int size, int64_t value,
   if (m_registers.count(offset)) {
     const auto new_value = static_cast<uint32_t>(value);
   m_registers[offset]->write(new_value,size, user_data);
-    // 强制打印 RCM_CTRL (0x00) 的所有写入
-    if (offset == 0x00) {
-      qDebug() << "[RCM RAW] CTRL Write: 0x" << Qt::hex << new_value
-               << " | PLL1EN bit:" << ((new_value >> 24) & 1)
-               << " | PLL2EN bit:" << ((new_value >> 26) & 1);
-    }
   }else {
     qWarning().noquote() << QString("   [CMU W: 0x%1] 警告: 访问未注册寄存器!").arg(offset, 0, 16);
     return false;
@@ -108,12 +102,14 @@ bool Rcm::handle_read(uc_engine *uc,uint64_t address,int size,int64_t *read_valu
     return false;
   }
   const auto offset = static_cast<uint32_t>(address - RCM_BASE);
+  // qDebug() << "[RCM Debug] 尝试查找寄存器 Offset:" << Qt::hex << offset<< " Map Size:" << m_registers.size();
   uint32_t stored_value = 0;
   if (m_registers.count(offset)) {
     stored_value = m_registers[offset]->read(user_data);
   } else {
     qWarning().noquote() << QString("   [CMU R: 0x%1] 警告: 访问未注册寄存器!").arg(offset, 0, 16);
     *read_value = 0;
+    // qDebug() << "[RCM Debug] 找到寄存器:" << m_registers[offset]->getName().c_str()<< " 返回值:" << Qt::hex << stored_value;
     return false;
   }
   *read_value = static_cast<int64_t>(stored_value);

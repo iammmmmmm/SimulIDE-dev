@@ -180,12 +180,12 @@ class QemuDevice : public Chip
 
         virtual void setupDeviceParams(){};
         void set_hooks();
-        void hook_mem_wr(uc_engine *uc,uc_mem_type type,uint64_t address,int size,int64_t value,void *user_data) const;
-        static  void hook_mem_wr_wappler
-        (uc_engine *uc,uc_mem_type type,uint64_t address,int size,int64_t value,void *user_data) {
-            auto qemudevice = static_cast<QemuDevice*>(user_data);
-            qemudevice->hook_mem_wr(uc,type,address,size,value,user_data);
-        };
+        // void hook_mem_wr(uc_engine *uc,uc_mem_type type,uint64_t address,int size,int64_t value,void *user_data) const;
+        // static  void hook_mem_wr_wappler
+        // (uc_engine *uc,uc_mem_type type,uint64_t address,int size,int64_t value,void *user_data) {
+        //     auto qemudevice = static_cast<QemuDevice*>(user_data);
+        //     qemudevice->hook_mem_wr(uc,type,address,size,value,user_data);
+        // };
         virtual bool hook_code(uc_engine *uc, uint64_t address, uint32_t size, void *user_data);
         static  bool hook_code_wappler(uc_engine *uc, uint64_t address, uint32_t size, void *user_data) {
             auto qemudevice = static_cast<QemuDevice*>(user_data);

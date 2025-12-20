@@ -369,28 +369,6 @@ bool Stm32::hook_code(uc_engine *uc, uint64_t address, uint32_t size, void *user
     const auto stm32_instance = static_cast<Stm32*>(user_data);
     const auto rcm_device = dynamic_cast<stm32Rcm::Rcm*>(stm32_instance->peripheral_registry->findDevice(RCM_BASE));
     rcm_device->run_tick(uc, address, size, user_data);
-    if (address == 0x0800027c) { // 读取动作发生的那一刻
-        uint32_t r3_addr;
-        uc_reg_read(uc, UC_ARM_REG_R3, &r3_addr);
-        qDebug() << "[Trace] 指令 0800027c 即将从地址:" << Qt::hex << r3_addr << "读取数据";
-    }
-
-    if (address == 0x08000282) { // 也就是你现在的判断点
-        uint32_t r3_val;
-        uc_reg_read(uc, UC_ARM_REG_R3, &r3_val);
-
-        // 强制从底层内存再读一次，对比一下
-        uint32_t mem_val = 0;
-        uc_mem_read(uc, 0x40021000, &mem_val, 4);
-
-        qDebug() << "[Compare] CPU寄存器 R3:" << Qt::hex << r3_val;
-        qDebug() << "[Compare] 内存地址 40021000 实际值:" << Qt::hex << mem_val;
-
-        if (r3_val != mem_val) {
-            qDebug() << "!!! [ERROR] 发现寄存器与内存不一致！读取过程可能被拦截或重定向了。";
-        }
-    }
-
     return QemuDevice::hook_code( uc, address, size, user_data );
 }
 

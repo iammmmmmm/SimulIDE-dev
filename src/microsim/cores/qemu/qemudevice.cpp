@@ -146,6 +146,29 @@ void QemuDevice::print_memory_map_debug() const {
 
     qDebug() << "============================================";
 }
+// 1. 定义 MMIO 读取回调
+uint64_t mmio_read_callback(uc_engine *uc, uint64_t address, unsigned size, void *user_data) {
+    const auto* device = static_cast<QemuDevice*>(user_data);
+    PeripheralDevice *peripheral = device->peripheral_registry->findDevice(0x40000000+address);
+
+    if (peripheral) {
+        int64_t val = 0;
+        peripheral->handle_read(uc, 0x40000000+address, size, &val, user_data);
+        return static_cast<uint64_t>(val);
+    }
+    qDebug()<<"mmio_read_callback peripheral==0";
+    return 0;
+}
+
+// 2. 定义 MMIO 写入回调
+void mmio_write_callback(uc_engine *uc, uint64_t address, unsigned size, uint64_t value, void *user_data) {
+    auto* device = static_cast<QemuDevice*>(user_data);
+    PeripheralDevice *peripheral = device->peripheral_registry->findDevice(0x40000000+address);
+
+    if (peripheral) {
+        peripheral->handle_write(uc, 0x40000000+address, size, value, user_data);
+    }
+}
 void QemuDevice::stamp()
 {
     setupDeviceParams();
@@ -154,7 +177,16 @@ void QemuDevice::stamp()
     uc_err = uc_mem_map(unicorn_emulator_ptr->get(),  m_mem_params.FLASH_START,  m_mem_params.FLASH_SIZE, UC_PROT_READ | UC_PROT_EXEC);
     uc_err=uc_mem_map(unicorn_emulator_ptr->get(),  m_mem_params.SRAM_START,  m_mem_params.SRAM_SIZE, UC_PROT_READ | UC_PROT_WRITE | UC_PROT_EXEC);
     uc_err=uc_mem_map(unicorn_emulator_ptr->get(),  m_mem_params.ROM_START,  m_mem_params.ROM_SIZE, UC_PROT_READ | UC_PROT_EXEC);
-    uc_err=uc_mem_map(unicorn_emulator_ptr->get(), m_mem_params.PERIPHERAL_START, m_mem_params.PERIPHERAL_END-m_mem_params.PERIPHERAL_START,UC_PROT_READ | UC_PROT_WRITE);
+    // uc_err=uc_mem_map(unicorn_emulator_ptr->get(), m_mem_params.PERIPHERAL_START, m_mem_params.PERIPHERAL_END-m_mem_params.PERIPHERAL_START,UC_PROT_READ | UC_PROT_WRITE);
+     uc_err = uc_mmio_map(
+            unicorn_emulator_ptr->get(),
+            m_mem_params.PERIPHERAL_START,
+            m_mem_params.PERIPHERAL_END-m_mem_params.PERIPHERAL_START, // 确保大小对齐
+            mmio_read_callback,           // 读回调
+            static_cast<void*>(this),      // user_data
+            mmio_write_callback,          // 写回调
+            static_cast<void*>(this)       // user_data
+        );
     uc_err=uc_mem_map(unicorn_emulator_ptr->get(),  m_mem_params.PPB_START,  m_mem_params.PPB_SIZE, UC_PROT_READ | UC_PROT_WRITE);
 
     if (uc_err) {
@@ -344,17 +376,17 @@ void QemuDevice::contextMenu( QGraphicsSceneContextMenuEvent* event, QMenu* menu
 }
 
 void QemuDevice::set_hooks() {
-    uc_hook hh_mem_write;
+  //  uc_hook hh_mem_write;
     uc_hook hh_code;
     uc_hook hh_mem_unmap;
-   uc_err = uc_hook_add(
-       unicorn_emulator_ptr->get(),
-       &hh_mem_write,
-       UC_HOOK_MEM_READ|UC_HOOK_MEM_WRITE,
-       reinterpret_cast<void*>(hook_mem_wr_wappler),
-       static_cast<void*>(this),
-       m_mem_params.PERIPHERAL_START,
-       m_mem_params.PERIPHERAL_END);
+   // uc_err = uc_hook_add(
+   //     unicorn_emulator_ptr->get(),
+   //     &hh_mem_write,
+   //     UC_HOOK_MEM_READ|UC_HOOK_MEM_WRITE,
+   //     reinterpret_cast<void*>(hook_mem_wr_wappler),
+   //     static_cast<void*>(this),
+   //     m_mem_params.PERIPHERAL_START,
+   //     m_mem_params.PERIPHERAL_END);
     //hook code带来的开销很大，但又必须知道”固件的当前时间“
     /*一个办法是使用hook block，但是block不提供指令数，只有块大小
      *      使用block 的话要么根据size 估算指令数，然后根据模拟器时间不断修正  精度差 性能好点 实现难度一般
@@ -382,23 +414,23 @@ void QemuDevice::set_hooks() {
         qWarning() << "QemuDevice::set_hooks(): uc_err=" <<uc_strerror(uc_err)<< Qt::endl;
     }
 }
-void QemuDevice::hook_mem_wr(uc_engine *uc,uc_mem_type type,uint64_t address,int size,int64_t value,void *user_data) const {
-    //qDebug()<<"QemuDevice::hook_mem_wr";
-    auto* device = static_cast<QemuDevice*>(user_data);
-    if (address>=device->m_mem_params.PERIPHERAL_START&&address<=device->m_mem_params.PERIPHERAL_END) {
-        PeripheralDevice *peripheral = peripheral_registry->findDevice(address);
-        if (peripheral) {
-            //qDebug().noquote()<<"指令PC：0x"<<Qt::hex<<getCurrentPc()<<Qt::endl;
-            if (type==UC_MEM_WRITE) {
-                peripheral->handle_write(uc,address,size,value, user_data);
-            }else {
-                peripheral->handle_read(uc,address,size,&value, user_data);
-            }
-        }else {
-    qWarning() << "QemuDevice::hook_mem_wr(): peripheral not found, address: 0x" << Qt::hex << address << Qt::endl;
-        }
-    }
-}
+// void QemuDevice::hook_mem_wr(uc_engine *uc,uc_mem_type type,uint64_t address,int size,int64_t value,void *user_data) const {
+//     //qDebug()<<"QemuDevice::hook_mem_wr";
+//     auto* device = static_cast<QemuDevice*>(user_data);
+//     if (address>=device->m_mem_params.PERIPHERAL_START&&address<=device->m_mem_params.PERIPHERAL_END) {
+//         PeripheralDevice *peripheral = peripheral_registry->findDevice(address);
+//         if (peripheral) {
+//             //qDebug().noquote()<<"指令PC：0x"<<Qt::hex<<getCurrentPc()<<Qt::endl;
+//             if (type==UC_MEM_WRITE) {
+//                 peripheral->handle_write(uc,address,size,value, user_data);
+//             }else {
+//                 peripheral->handle_read(uc,address,size,&value, user_data);
+//             }
+//         }else {
+//     qWarning() << "QemuDevice::hook_mem_wr(): peripheral not found, address: 0x" << Qt::hex << address << Qt::endl;
+//         }
+//     }
+// }
 bool QemuDevice::hook_code(uc_engine *uc, uint64_t address, uint32_t size, void *user_data) {
   //  qDebug() << "QemuDevice::hook_code(): address=" << Qt::hex << address << Qt::endl;
     //auto* device = static_cast<QemuDevice*>(user_data);

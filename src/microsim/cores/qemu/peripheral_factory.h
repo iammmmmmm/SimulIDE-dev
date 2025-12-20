@@ -42,12 +42,12 @@ class PeripheralRegistry {
       m_devices[base_addr] = std::move(device);
     }
     //TODO need more code to do more things
-     PeripheralDevice *findDevice(uint64_t address) const {
+     PeripheralDevice *findDevice(const uint64_t address) const {
       auto it = m_devices.upper_bound(address);
       if (it != m_devices.begin()) {
         --it;
         PeripheralDevice *device = it->second.get();
-        uint64_t base_addr = it->first; // 获取基地址
+        const uint64_t base_addr = it->first; // 获取基地址
         if (address < base_addr + device->getSize()) {
           return device;
         }
