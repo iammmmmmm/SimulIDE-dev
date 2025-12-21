@@ -105,7 +105,6 @@ QemuDevice::~QemuDevice()
 
 void QemuDevice::initialize()
 {
-     target_instr_count=0;
      target_instr_begin.store(0);
      last_target_time=0;
      target_time=0;
@@ -171,9 +170,11 @@ void mmio_write_callback(uc_engine *uc, uint64_t address, unsigned size, uint64_
 }
 void QemuDevice::stamp()
 {
+    clearHeap();
     setupDeviceParams();
     print_memory_map_debug();
     unicorn_emulator_ptr=std::make_unique<UnicornEmulator>(arch,mode);
+
     uc_err = uc_mem_map(unicorn_emulator_ptr->get(),  m_mem_params.FLASH_START,  m_mem_params.FLASH_SIZE, UC_PROT_READ | UC_PROT_EXEC);
     uc_err=uc_mem_map(unicorn_emulator_ptr->get(),  m_mem_params.SRAM_START,  m_mem_params.SRAM_SIZE, UC_PROT_READ | UC_PROT_WRITE | UC_PROT_EXEC);
     uc_err=uc_mem_map(unicorn_emulator_ptr->get(),  m_mem_params.ROM_START,  m_mem_params.ROM_SIZE, UC_PROT_READ | UC_PROT_EXEC);
@@ -183,7 +184,7 @@ void QemuDevice::stamp()
             m_mem_params.PERIPHERAL_START,
             m_mem_params.PERIPHERAL_END-m_mem_params.PERIPHERAL_START, // 确保大小对齐
             mmio_read_callback,           // 读回调
-            static_cast<void*>(this),      // user_data
+            this,      // user_data
             mmio_write_callback,          // 写回调
             static_cast<void*>(this)       // user_data
         );

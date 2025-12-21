@@ -113,7 +113,11 @@ class QemuDevice : public Chip
          */
         void schedule_event(uint64_t time, EventActionType type, EventParams params);
     protected:
- static QemuDevice* m_pSelf;
+        void clearHeap() {
+            std::priority_queue<ScheduledEvent, std::vector<ScheduledEvent>, EventComparator> empty;
+            std::swap(event_heap, empty);
+        }
+        static QemuDevice* m_pSelf;
        std::priority_queue<ScheduledEvent,std::vector<ScheduledEvent>,EventComparator> event_heap;
         virtual bool createArgs(){ return false;}
 
@@ -172,7 +176,6 @@ class QemuDevice : public Chip
             uint64_t PPB_SIZE = 0x100000;
         };
         MemoryParams m_mem_params;
-        uint64_t target_instr_count=0;
         std::atomic<uint64_t> target_instr_begin{0};
 
         //uint64_t target_instr_end=0;

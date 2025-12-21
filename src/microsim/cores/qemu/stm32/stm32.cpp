@@ -71,7 +71,6 @@ Stm32::Stm32( QString type, QString id, QString device )
 
 
 
-     target_instr_count=0;
      target_instr_begin=0;
     //uint64_t target_instr_end=0;
      last_target_time=0;
