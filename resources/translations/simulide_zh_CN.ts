@@ -12,7 +12,7 @@
         <location filename="../../src/components/logic/adc.cpp" line="44"/>
         <location filename="../../src/components/logic/adc.cpp" line="52"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation>基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/logic/adc.cpp" line="45"/>
@@ -118,7 +118,7 @@
     <message>
         <location filename="../../src/components/outputs/displays/aip31068_i2c.cpp" line="52"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/outputs/displays/aip31068_i2c.cpp" line="53"/>
@@ -174,7 +174,7 @@
     <message>
         <location filename="../../src/components/logic/gate_and.cpp" line="32"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/logic/gate_and.cpp" line="45"/>
@@ -412,7 +412,7 @@
     <message>
         <location filename="../../src/components/outputs/audio_out.cpp" line="97"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/outputs/audio_out.cpp" line="98"/>
@@ -440,7 +440,7 @@
     <message>
         <location filename="../../src/components/active/bjt.cpp" line="51"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/active/bjt.cpp" line="52"/>
@@ -496,7 +496,7 @@
     <message>
         <location filename="../../src/components/sources/battery.cpp" line="48"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/sources/battery.cpp" line="49"/>
@@ -520,7 +520,7 @@
         <location filename="../../src/components/logic/bcdto7s.cpp" line="64"/>
         <location filename="../../src/components/logic/bcdto7s.cpp" line="72"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/logic/bcdto7s.cpp" line="65"/>
@@ -569,7 +569,7 @@
         <location filename="../../src/components/logic/bcdtodec.cpp" line="43"/>
         <location filename="../../src/components/logic/bcdtodec.cpp" line="48"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/logic/bcdtodec.cpp" line="44"/>
@@ -613,7 +613,7 @@
         <location filename="../../src/components/logic/bincounter.cpp" line="72"/>
         <location filename="../../src/components/logic/bincounter.cpp" line="96"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/logic/bincounter.cpp" line="74"/>
@@ -672,7 +672,7 @@
         <location filename="../../src/components/logic/buffer.cpp" line="38"/>
         <location filename="../../src/components/logic/buffer.cpp" line="43"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/logic/buffer.cpp" line="39"/>
@@ -724,7 +724,7 @@
     <message>
         <location filename="../../src/components/logic/bus.cpp" line="51"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/logic/bus.cpp" line="52"/>
@@ -751,7 +751,7 @@
     <message>
         <location filename="../../src/components/passive/reactive/capacitorbase.cpp" line="24"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation>基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/passive/reactive/capacitorbase.cpp" line="25"/>
@@ -787,7 +787,7 @@
     <message>
         <location filename="../../src/gui/circuitwidget/circuit.cpp" line="513"/>
         <source>Circuits (*.sim*);;All files (*.*)</source>
-        <translation type="unfinished"></translation>
+        <translation>Circuits (*.sim*);;All files (*.*)</translation>
     </message>
     <message>
         <source>Circuits (*.sim1);;All files (*.*)</source>
@@ -1044,7 +1044,7 @@ Can&apos;t find file:
         <location filename="../../src/components/sources/clock.cpp" line="34"/>
         <location filename="../../src/components/sources/clock.cpp" line="36"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/sources/clock.cpp" line="37"/>
@@ -1183,7 +1183,7 @@ Can&apos;t find file:
     <message>
         <location filename="../../src/components/active/comparator.cpp" line="61"/>
         <source>Electric</source>
-        <translation type="unfinished">电气</translation>
+        <translation type="unfinished">电学参数</translation>
     </message>
     <message>
         <location filename="../../src/components/active/comparator.cpp" line="66"/>
@@ -1354,7 +1354,7 @@ Can&apos;t find file:
     <message>
         <location filename="../../src/gui/circuitwidget/connbase.cpp" line="26"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/gui/circuitwidget/connbase.cpp" line="27"/>
@@ -1381,7 +1381,7 @@ Can&apos;t find file:
         <location filename="../../src/components/logic/counter.cpp" line="52"/>
         <location filename="../../src/components/logic/counter.cpp" line="66"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/logic/counter.cpp" line="53"/>
@@ -1419,7 +1419,7 @@ Can&apos;t find file:
     <message>
         <location filename="../../src/components/sources/csource.cpp" line="71"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/sources/csource.cpp" line="75"/>
@@ -1462,7 +1462,7 @@ Can&apos;t find file:
     <message>
         <location filename="../../src/components/sources/currsource.cpp" line="38"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/sources/currsource.cpp" line="39"/>
@@ -1491,7 +1491,7 @@ Can&apos;t find file:
         <location filename="../../src/components/logic/dac.cpp" line="43"/>
         <location filename="../../src/components/logic/dac.cpp" line="51"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/logic/dac.cpp" line="44"/>
@@ -1529,7 +1529,7 @@ Can&apos;t find file:
     <message>
         <location filename="../../src/components/micro/ds1307.cpp" line="58"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
 </context>
 <context>
@@ -1542,7 +1542,7 @@ Can&apos;t find file:
     <message>
         <location filename="../../src/components/micro/ds1621.cpp" line="109"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/micro/ds1621.cpp" line="110"/>
@@ -1581,7 +1581,7 @@ Can&apos;t find file:
     <message>
         <location filename="../../src/components/outputs/motors/dcmotor.cpp" line="70"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/outputs/motors/dcmotor.cpp" line="71"/>
@@ -1615,7 +1615,7 @@ Can&apos;t find file:
         <location filename="../../src/components/logic/dectobcd.cpp" line="52"/>
         <location filename="../../src/components/logic/dectobcd.cpp" line="57"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/logic/dectobcd.cpp" line="53"/>
@@ -1659,7 +1659,7 @@ Can&apos;t find file:
         <location filename="../../src/components/logic/demux.cpp" line="57"/>
         <location filename="../../src/components/logic/demux.cpp" line="62"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/logic/demux.cpp" line="58"/>
@@ -1692,7 +1692,7 @@ Can&apos;t find file:
     <message>
         <location filename="../../src/components/micro/dht22.cpp" line="91"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/micro/dht22.cpp" line="92"/>
@@ -1730,7 +1730,7 @@ Can&apos;t find file:
     <message>
         <location filename="../../src/components/active/diac.cpp" line="71"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/active/diac.cpp" line="72"/>
@@ -1765,7 +1765,7 @@ Can&apos;t find file:
     <message>
         <location filename="../../src/components/other/dial.cpp" line="61"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/other/dial.cpp" line="63"/>
@@ -1836,7 +1836,7 @@ Can&apos;t find file:
     <message>
         <location filename="../../src/components/active/diode.cpp" line="64"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/active/diode.cpp" line="65"/>
@@ -1846,7 +1846,7 @@ Can&apos;t find file:
     <message>
         <location filename="../../src/components/active/diode.cpp" line="69"/>
         <source>Electric</source>
-        <translation>电气</translation>
+        <translation>电学参数</translation>
     </message>
     <message>
         <location filename="../../src/components/active/diode.cpp" line="70"/>
@@ -1889,7 +1889,7 @@ Can&apos;t find file:
     <message>
         <location filename="../../src/components/micro/ds18b20.cpp" line="99"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/micro/ds18b20.cpp" line="103"/>
@@ -1913,7 +1913,7 @@ Can&apos;t find file:
         <location filename="../../src/components/logic/dynamic_memory.cpp" line="83"/>
         <location filename="../../src/components/logic/dynamic_memory.cpp" line="97"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/logic/dynamic_memory.cpp" line="84"/>
@@ -2450,7 +2450,7 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/components/micro/esp01.cpp" line="82"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
 </context>
 <context>
@@ -2571,7 +2571,7 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/components/sources/fixedvolt.cpp" line="61"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/sources/fixedvolt.cpp" line="62"/>
@@ -2595,7 +2595,7 @@ Do you want to save your changes?
         <location filename="../../src/components/logic/flipflopbase.cpp" line="23"/>
         <location filename="../../src/components/logic/flipflopbase.cpp" line="37"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/logic/flipflopbase.cpp" line="24"/>
@@ -2665,7 +2665,7 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/components/meters/freqmeter.cpp" line="61"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/meters/freqmeter.cpp" line="62"/>
@@ -2700,7 +2700,7 @@ Do you want to save your changes?
         <location filename="../../src/components/logic/fulladder.cpp" line="44"/>
         <location filename="../../src/components/logic/fulladder.cpp" line="49"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/logic/fulladder.cpp" line="45"/>
@@ -2719,7 +2719,7 @@ Do you want to save your changes?
         <location filename="../../src/components/logic/function.cpp" line="79"/>
         <location filename="../../src/components/logic/function.cpp" line="84"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/logic/function.cpp" line="86"/>
@@ -2805,7 +2805,7 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/components/outputs/displays/hd44780.cpp" line="59"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/outputs/displays/hd44780.cpp" line="60"/>
@@ -2829,7 +2829,7 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/components/connectors/header.cpp" line="36"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/connectors/header.cpp" line="37"/>
@@ -2865,7 +2865,7 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/components/logic/i2cram.cpp" line="66"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/logic/i2cram.cpp" line="67"/>
@@ -2913,7 +2913,7 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/components/logic/i2ctoparallel.cpp" line="65"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/logic/i2ctoparallel.cpp" line="69"/>
@@ -2960,7 +2960,7 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/components/passive/reactive/inductor.cpp" line="40"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/passive/reactive/inductor.cpp" line="41"/>
@@ -3143,7 +3143,7 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/components/active/jfet.cpp" line="48"/>
         <source>Electric</source>
-        <translation type="unfinished">电气</translation>
+        <translation type="unfinished">电学参数</translation>
     </message>
     <message>
         <location filename="../../src/components/active/jfet.cpp" line="49"/>
@@ -3180,7 +3180,7 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/components/micro/ky040.cpp" line="96"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/micro/ky040.cpp" line="97"/>
@@ -3198,7 +3198,7 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/components/switches/keypad.cpp" line="47"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/switches/keypad.cpp" line="54"/>
@@ -3231,7 +3231,7 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/components/outputs/displays/ks0108.cpp" line="78"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/outputs/displays/ks0108.cpp" line="79"/>
@@ -3361,7 +3361,7 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/components/outputs/lamp.cpp" line="47"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/outputs/lamp.cpp" line="48"/>
@@ -3385,7 +3385,7 @@ Do you want to save your changes?
         <location filename="../../src/components/logic/latchd.cpp" line="55"/>
         <location filename="../../src/components/logic/latchd.cpp" line="66"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/logic/latchd.cpp" line="56"/>
@@ -3438,7 +3438,7 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/components/passive/resist_sensors/ldr.cpp" line="40"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/passive/resist_sensors/ldr.cpp" line="41"/>
@@ -3504,7 +3504,7 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/components/outputs/leds/ledbar.cpp" line="49"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/outputs/leds/ledbar.cpp" line="53"/>
@@ -3524,7 +3524,7 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/components/outputs/leds/ledbar.cpp" line="60"/>
         <source>Electric</source>
-        <translation>电气</translation>
+        <translation type="unfinished">电学参数</translation>
     </message>
     <message>
         <location filename="../../src/components/outputs/leds/ledbar.cpp" line="61"/>
@@ -3582,7 +3582,7 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/components/outputs/leds/ledbase.cpp" line="39"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/outputs/leds/ledbase.cpp" line="40"/>
@@ -3597,7 +3597,7 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/components/outputs/leds/ledbase.cpp" line="47"/>
         <source>Electric</source>
-        <translation>电气</translation>
+        <translation type="unfinished">电学参数</translation>
     </message>
     <message>
         <location filename="../../src/components/outputs/leds/ledbase.cpp" line="48"/>
@@ -3625,7 +3625,7 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/components/outputs/leds/ledmatrix.cpp" line="51"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/outputs/leds/ledmatrix.cpp" line="55"/>
@@ -3650,7 +3650,7 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/components/outputs/leds/ledmatrix.cpp" line="65"/>
         <source>Electric</source>
-        <translation>电气</translation>
+        <translation type="unfinished">电学参数</translation>
     </message>
     <message>
         <location filename="../../src/components/outputs/leds/ledmatrix.cpp" line="66"/>
@@ -3678,7 +3678,7 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/components/outputs/leds/ledrgb.cpp" line="64"/>
         <source>Electric</source>
-        <translation>电气</translation>
+        <translation type="unfinished">电学参数</translation>
     </message>
     <message>
         <location filename="../../src/components/outputs/leds/ledrgb.cpp" line="65"/>
@@ -3779,7 +3779,7 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/components/subcircuits/logicsubc.cpp" line="28"/>
         <source>Electric</source>
-        <translation>电气</translation>
+        <translation type="unfinished">电学参数</translation>
     </message>
     <message>
         <location filename="../../src/components/subcircuits/logicsubc.cpp" line="29"/>
@@ -3864,7 +3864,7 @@ Do you want to save your changes?
         <location filename="../../src/components/logic/magnitudecomp.cpp" line="46"/>
         <location filename="../../src/components/logic/magnitudecomp.cpp" line="51"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/logic/magnitudecomp.cpp" line="47"/>
@@ -3966,7 +3966,7 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/components/outputs/leds/max72xx_matrix.cpp" line="75"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/outputs/leds/max72xx_matrix.cpp" line="76"/>
@@ -3991,7 +3991,7 @@ Do you want to save your changes?
         <location filename="../../src/microsim/mcu.cpp" line="256"/>
         <location filename="../../src/microsim/mcu.cpp" line="260"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/microsim/mcu.cpp" line="242"/>
@@ -4151,7 +4151,7 @@ Do you want to save your changes?
         <location filename="../../src/components/logic/memory.cpp" line="72"/>
         <location filename="../../src/components/logic/memory.cpp" line="86"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/logic/memory.cpp" line="73"/>
@@ -4214,7 +4214,7 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/components/subcircuits/module.cpp" line="22"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/subcircuits/module.cpp" line="23"/>
@@ -4233,7 +4233,7 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/components/active/mosfet.cpp" line="46"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/active/mosfet.cpp" line="47"/>
@@ -4248,7 +4248,7 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/components/active/mosfet.cpp" line="54"/>
         <source>Electric</source>
-        <translation>电气</translation>
+        <translation type="unfinished">电学参数</translation>
     </message>
     <message>
         <location filename="../../src/components/active/mosfet.cpp" line="55"/>
@@ -4272,7 +4272,7 @@ Do you want to save your changes?
         <location filename="../../src/components/logic/mux.cpp" line="60"/>
         <location filename="../../src/components/logic/mux.cpp" line="65"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/logic/mux.cpp" line="61"/>
@@ -4315,7 +4315,7 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/components/active/mux_analog.cpp" line="58"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/active/mux_analog.cpp" line="59"/>
@@ -4338,7 +4338,7 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/components/active/op_amp.cpp" line="79"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/active/op_amp.cpp" line="80"/>
@@ -4401,7 +4401,7 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/components/logic/gate_or.cpp" line="32"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/logic/gate_or.cpp" line="45"/>
@@ -4494,7 +4494,7 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/gui/dataplotwidget/plotbase.cpp" line="73"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/gui/dataplotwidget/plotbase.cpp" line="80"/>
@@ -4547,7 +4547,7 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/components/passive/resistors/potentiometer.cpp" line="72"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/passive/resistors/potentiometer.cpp" line="73"/>
@@ -4575,7 +4575,7 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/components/meters/probe.cpp" line="66"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/meters/probe.cpp" line="67"/>
@@ -4623,7 +4623,7 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/gui/properties/propdialog.ui" line="174"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
 </context>
 <context>
@@ -4636,7 +4636,7 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/components/switches/push.cpp" line="40"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/switches/push.cpp" line="41"/>
@@ -4828,7 +4828,7 @@ Do you want to save your changes?
         <location filename="../../src/microsim/cores/z80/ula_zx48k.cpp" line="96"/>
         <location filename="../../src/microsim/cores/z80/ula_zx48k.cpp" line="100"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/microsim/cores/z80/ula_zx48k.cpp" line="97"/>
@@ -4876,7 +4876,7 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/microsim/cores/qemu/qemudevice.cpp" line="123"/>
         <source>Main</source>
-        <translation type="unfinished">主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/microsim/cores/qemu/qemudevice.cpp" line="124"/>
@@ -4947,7 +4947,7 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/components/sources/rail.cpp" line="47"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/sources/rail.cpp" line="48"/>
@@ -5031,7 +5031,7 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/components/switches/relay.cpp" line="62"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/switches/relay.cpp" line="63"/>
@@ -5051,7 +5051,7 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/components/switches/relay.cpp" line="73"/>
         <source>Electric</source>
-        <translation>电气</translation>
+        <translation type="unfinished">电学参数</translation>
     </message>
     <message>
         <location filename="../../src/components/switches/relay.cpp" line="74"/>
@@ -5089,7 +5089,7 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/components/passive/resistors/resistor.cpp" line="39"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/passive/resistors/resistor.cpp" line="40"/>
@@ -5107,7 +5107,7 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/components/passive/resistors/resistordip.cpp" line="60"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/passive/resistors/resistordip.cpp" line="61"/>
@@ -5140,7 +5140,7 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/components/active/scr.cpp" line="72"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/active/scr.cpp" line="73"/>
@@ -5163,7 +5163,7 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/components/micro/sr04.cpp" line="85"/>
         <source>Main</source>
-        <translation type="unfinished">主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/micro/sr04.cpp" line="86"/>
@@ -5181,7 +5181,7 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/components/micro/sdcard.cpp" line="83"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/micro/sdcard.cpp" line="84"/>
@@ -5292,7 +5292,7 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/components/micro/serialport.cpp" line="90"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/micro/serialport.cpp" line="94"/>
@@ -5358,7 +5358,7 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/components/micro/serialterm.cpp" line="86"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/micro/serialterm.cpp" line="91"/>
@@ -5401,7 +5401,7 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/components/outputs/motors/servo.cpp" line="61"/>
         <source>Main</source>
-        <translation type="unfinished">主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/outputs/motors/servo.cpp" line="62"/>
@@ -5421,7 +5421,7 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/components/outputs/motors/servo.cpp" line="71"/>
         <source>Electric</source>
-        <translation type="unfinished">电气参数</translation>
+        <translation type="unfinished">电学参数</translation>
     </message>
 </context>
 <context>
@@ -5434,7 +5434,7 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/components/outputs/leds/sevensegment.cpp" line="74"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/outputs/leds/sevensegment.cpp" line="78"/>
@@ -5454,7 +5454,7 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/components/outputs/leds/sevensegment.cpp" line="85"/>
         <source>Electric</source>
-        <translation>电气</translation>
+        <translation type="unfinished">电学参数</translation>
     </message>
     <message>
         <location filename="../../src/components/outputs/leds/sevensegment.cpp" line="86"/>
@@ -5487,7 +5487,7 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/components/logic/sevensegment_bcd.cpp" line="71"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/logic/sevensegment_bcd.cpp" line="72"/>
@@ -5505,7 +5505,7 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/components/outputs/displays/sh1107.cpp" line="37"/>
         <source>Main</source>
-        <translation type="unfinished">主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/outputs/displays/sh1107.cpp" line="38"/>
@@ -5538,7 +5538,7 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/components/graphical/shape.cpp" line="33"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/graphical/shape.cpp" line="43"/>
@@ -5601,7 +5601,7 @@ Do you want to save your changes?
         <location filename="../../src/components/logic/shiftreg.cpp" line="71"/>
         <location filename="../../src/components/logic/shiftreg.cpp" line="88"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/logic/shiftreg.cpp" line="101"/>
@@ -5680,7 +5680,7 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/components/outputs/displays/ssd1306.cpp" line="40"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/outputs/displays/ssd1306.cpp" line="41"/>
@@ -5722,7 +5722,7 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/components/outputs/displays/st77xx.cpp" line="32"/>
         <source>Main</source>
-        <translation type="unfinished">主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/outputs/displays/st77xx.cpp" line="33"/>
@@ -5750,7 +5750,7 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/components/outputs/motors/stepper.cpp" line="87"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/outputs/motors/stepper.cpp" line="88"/>
@@ -5778,7 +5778,7 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/components/passive/resist_sensors/strain.cpp" line="44"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/passive/resist_sensors/strain.cpp" line="45"/>
@@ -5827,7 +5827,7 @@ Do you want to save your changes?
         <location filename="../../src/components/subcircuits/subcircuit.cpp" line="127"/>
         <location filename="../../src/components/subcircuits/subcircuit.cpp" line="164"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/subcircuits/subcircuit.cpp" line="154"/>
@@ -5855,7 +5855,7 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/components/other/subpackage.cpp" line="85"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/other/subpackage.cpp" line="86"/>
@@ -5982,7 +5982,7 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/components/switches/switch.cpp" line="44"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/switches/switch.cpp" line="45"/>
@@ -6015,7 +6015,7 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/components/switches/switchdip.cpp" line="55"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/switches/switchdip.cpp" line="56"/>
@@ -6043,7 +6043,7 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/components/other/testunit.cpp" line="51"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/other/testunit.cpp" line="52"/>
@@ -6083,7 +6083,7 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/components/graphical/textcomponent.cpp" line="82"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/graphical/textcomponent.cpp" line="83"/>
@@ -6149,7 +6149,7 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/components/passive/resist_sensors/thermistorbase.cpp" line="22"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/passive/resist_sensors/thermistorbase.cpp" line="23"/>
@@ -6183,7 +6183,7 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/components/micro/touchpad.cpp" line="102"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/micro/touchpad.cpp" line="103"/>
@@ -6203,7 +6203,7 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/components/micro/touchpad.cpp" line="113"/>
         <source>Electric</source>
-        <translation>电气</translation>
+        <translation type="unfinished">电学参数</translation>
     </message>
     <message>
         <location filename="../../src/components/micro/touchpad.cpp" line="114"/>
@@ -6236,7 +6236,7 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/components/passive/reactive/transformer.cpp" line="51"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/passive/reactive/transformer.cpp" line="52"/>
@@ -6269,7 +6269,7 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/components/active/triac.cpp" line="78"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/active/triac.cpp" line="79"/>
@@ -6320,7 +6320,7 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/components/connectors/tunnel.cpp" line="57"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/connectors/tunnel.cpp" line="58"/>
@@ -6381,7 +6381,7 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/components/passive/resistors/varresistor.cpp" line="36"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/passive/resistors/varresistor.cpp" line="37"/>
@@ -6420,7 +6420,7 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/components/active/volt_reg.cpp" line="61"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/active/volt_reg.cpp" line="62"/>
@@ -6438,7 +6438,7 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/components/sources/voltsource.cpp" line="40"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/sources/voltsource.cpp" line="41"/>
@@ -6475,7 +6475,7 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/components/outputs/leds/ws2812.cpp" line="58"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/outputs/leds/ws2812.cpp" line="59"/>
@@ -6549,7 +6549,7 @@ Do you want to save your changes?
         <location filename="../../src/components/sources/wavegen.cpp" line="65"/>
         <location filename="../../src/components/sources/wavegen.cpp" line="70"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/sources/wavegen.cpp" line="71"/>
@@ -6584,7 +6584,7 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/components/sources/wavegen.cpp" line="93"/>
         <source>Electric</source>
-        <translation>电气</translation>
+        <translation type="unfinished">电学参数</translation>
     </message>
     <message>
         <location filename="../../src/components/sources/wavegen.cpp" line="94"/>
@@ -6642,7 +6642,7 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/components/logic/gate_xor.cpp" line="33"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/logic/gate_xor.cpp" line="35"/>
@@ -6680,7 +6680,7 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/components/active/zener.cpp" line="30"/>
         <source>Main</source>
-        <translation>主要</translation>
+        <translation type="unfinished">基本参数</translation>
     </message>
     <message>
         <location filename="../../src/components/active/zener.cpp" line="31"/>
