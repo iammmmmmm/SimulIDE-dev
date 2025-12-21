@@ -106,7 +106,7 @@ QemuDevice::~QemuDevice()
 void QemuDevice::initialize()
 {
      target_instr_count=0;
-     target_instr_begin=0;
+     target_instr_begin.store(0);
      last_target_time=0;
      target_time=0;
 }
@@ -206,7 +206,7 @@ void QemuDevice::stamp()
    const uint64_t start_pc=getStartPc();
     if (start_pc) {
         qDebug()<<"uc emu start!"<< Qt::endl;
-        target_instr_begin=start_pc;
+        target_instr_begin.store(start_pc) ;
     }else {
         qWarning() <<"start_pc err；"<<uc_strerror(uc_err)<< Qt::endl;
     }
@@ -282,7 +282,7 @@ uint64_t QemuDevice::calculateInstructionsToExecute(uint64_t target_time_ps,uint
 uint64_t QemuDevice::getCurrentPc() const {
     uint64_t current_pc = 0;
     uc_reg_read(unicorn_emulator_ptr->get(), UC_ARM_REG_PC, &current_pc);
-    return current_pc;
+    return current_pc|1;
 }
 void QemuDevice::runEvent()
 {

@@ -97,9 +97,20 @@ Stm32::Stm32( QString type, QString id, QString device )
 
     //m_timers.resize( m_timerN );
     //for( int i=0; i<m_timerN; ++i ) m_timers[i] = new QemuTimer( this, "Timer"+QString::number(i), i );
+    last_target_time = 0;
+    m_psRemainder = 0.0;
+    m_stopThread = false;
+    m_stopThread = false;
+    m_emuThread = std::thread(&Stm32::emuLoop, this);
 
 }
-Stm32::~Stm32(){}
+Stm32::~Stm32() {
+    m_stopThread = true;
+    m_queueCv.notify_all();
+    if (m_emuThread.joinable()) {
+        m_emuThread.join();
+    }
+}
 
 void Stm32::stamp()
 {
@@ -122,42 +133,122 @@ Component * Stm32::construct(QString type, QString id) {
     QString device = Chip::getDevice( id );
     return new Stm32( type, id, device );
 }
-void Stm32::runToTime(const uint64_t time) {
-    const auto rcm_ = dynamic_cast<stm32Rcm::Rcm*>(peripheral_registry->findDevice(RCM_BASE));
-    if (rcm_) {
-        QElapsedTimer timer;
-        const uint64_t sys_freq = rcm_->getSysClockFrequency();
-        double ps_per_inst;
-        if (sys_freq > 0) {
-            // 10^12 是 1 秒的皮秒数
-            ps_per_inst = 1e12 / static_cast<double>(sys_freq);
-        } else {
-            //TODO here need do somethings ?
-            ps_per_inst = 125000.0;
+void Stm32::emuLoop() {
+    while (!m_stopThread) {
+        EmuTask task;
+        {
+            std::unique_lock<std::mutex> lock(m_queueMutex);
+            m_queueCv.wait(lock, [this]{ return !m_taskQueue.empty() || m_stopThread; });
+            if (m_stopThread) break;
+            task = m_taskQueue.front();
+            m_taskQueue.pop();
         }
-        //TODO 2.0有点太大，有的时候1.0~1.5，考虑根据固件行为优化这个
-        ps_per_inst=ps_per_inst*2.0;//mcu实际执行中需要各种等待flash什么的，所以做不到每周期一个指令。这是一个经验值
-        target_instr_count = calculateInstructionsToExecute(time, last_target_time, ps_per_inst);
-       timer.start();
-        if (target_instr_count > 0) {
-            uc_err = uc_emu_start(unicorn_emulator_ptr->get(), target_instr_begin, 0, 0, target_instr_count);
+        // --- 处理 PC 初始化 ---
+
+        // 处理这一个 task 里的所有指令
+        uint64_t remaining = task.count;
+        while (remaining > 0 && !m_stopThread) {
+            // 分批执行，例如每 5000 条交还一次控制权
+            const uint64_t step = std::min(remaining, static_cast<uint64_t>(500000));
+            uc_err = uc_emu_start(unicorn_emulator_ptr->get(), target_instr_begin.load(), 0xFFFFFFFF, 0, step);
+            target_instr_begin.store(getCurrentPc());
+            if (uc_err != UC_ERR_OK) {
+                qDebug() << "Unicorn 运行报错:" << uc_strerror(uc_err);
+                remaining = 0; // 终止当前任务
+                break;
+            }
+            remaining -= step;
+
+            // 检查此时队列里是否有更紧迫的任务（可选，为了实时性）
+            // 如果不想让单次大任务占死线程，可以在这里检查
         }
-       const uint64_t time_use=timer.elapsed();
-        if (uc_err != UC_ERR_OK) {
-            //FIXME: TODO somthings
-            qWarning()<<"void Stm32::runToTime(uint64_t time) uc err"<<uc_strerror(uc_err)<<"pc:"<<Qt::hex<<getCurrentPc()<<Qt::endl;
-            Simulator::self()->stopSim();
-        }
-        qDebug()<<"run to time:"<<time<<"mcu freq"<<sys_freq<<" "<<uc_strerror(uc_err)<<"target_instr_count:"<<target_instr_count<<"use time:"<<time_use<<"ms"<<Qt::endl;
-        last_target_time = time;
-        target_instr_begin=getCurrentPc()|1;//// 将 LSB 置 1，告诉 Unicorn 下次从这个地址开始时使用Thumb 模式
-    } else {
-        qWarning() << "rcm peripheral not found for instruction calculation.";
     }
 }
+void Stm32::runToTime(const uint64_t time) {
+    qDebug()<<"[Stm32::runToTime]:time:"<<time;
+    std::lock_guard<std::mutex> lock(m_queueMutex);
+    //qDebug() << "[追踪] 当前时间:" << time << " 与上次差值:" << (time - last_target_time);
+    if (last_target_time == 0) {
+        last_target_time = time;
+        return;
+    }
+
+    if (time <= last_target_time) {
+   // qDebug() << "[警告] 检测到时间回溯或重置。当前记录时间:" << last_target_time << " 外部传入时间:" << time;
+        //  last_target_time = time;
+       // m_psRemainder = 0;
+        return;
+    }
+
+    {
+        const uint64_t deltaTime = time - last_target_time;
+        const auto rcm_ = dynamic_cast<stm32Rcm::Rcm*>(peripheral_registry->findDevice(RCM_BASE));
+        const uint64_t sys_freq = (rcm_ && rcm_->getSysClockFrequency() > 0) ? rcm_->getSysClockFrequency() : 8000000;
+        if (sys_freq == 0) {
+qWarning() << "[错误] 系统时钟频率为 0，无法计算指令数";
+            return;
+        }
+        const double ps_per_inst = (1e12 / static_cast<double>(sys_freq)) * 2.0;
+
+
+        const double total_ps = static_cast<double>(deltaTime) + m_psRemainder;
+        const auto count = static_cast<uint64_t>(total_ps / ps_per_inst);
+
+        if (count > 1000000000ULL) {
+           // qDebug() << "[严重错误] 检测到异常指令数！可能是时间轴跳变。"
+          //           << "差值(deltaTime):" << deltaTime << " 频率:" << sys_freq;
+            return;
+        }
+        if (count > 0) {
+            if (!m_taskQueue.empty()) {
+                // 如果队列里还有任务，直接把新的指令数加到最后一个任务里
+                // 这样 queue.size 永远不会爆炸，减少线程切换开销
+                m_taskQueue.back().count += count;
+            } else {
+
+                m_taskQueue.push({count});
+            }
+            m_psRemainder=total_ps-(static_cast<double>(count) * ps_per_inst);
+            last_target_time = time;
+            qDebug() << "任务队列大小:" << m_taskQueue.size() << " 新增指令数:" << count;
+            m_queueCv.notify_one();
+        }else {
+            qWarning() << "指令数不足 1，等待累计";
+        }
+    }
+    /** const auto rcm_ = dynamic_cast<stm32Rcm::Rcm*>(peripheral_registry->findDevice(RCM_BASE));
+    // if (rcm_) {
+    //     QElapsedTimer timer;
+    //     const uint64_t sys_freq = rcm_->getSysClockFrequency();
+    //     double ps_per_inst;
+    //     if (sys_freq > 0) {
+    //         // 10^12 是 1 秒的皮秒数
+    //         ps_per_inst = 1e12 / static_cast<double>(sys_freq);
+    //     } else {
+    //         //TODO here need do somethings ?
+    //         ps_per_inst = 125000.0;
+    //     }
+    //     //TODO 2.0有点太大，有的时候1.0~1.5，考虑根据固件行为优化这个
+    //     ps_per_inst=ps_per_inst*2.0;//mcu实际执行中需要各种等待flash什么的，所以做不到每周期一个指令。这是一个经验值
+    //     target_instr_count = calculateInstructionsToExecute(time, last_target_time, ps_per_inst);
+    //    timer.start();
+    //     if (target_instr_count > 0) {
+    //         uc_err = uc_emu_start(unicorn_emulator_ptr->get(), target_instr_begin, 0, 0, target_instr_count);
+    //     }
+    //    const uint64_t time_use=timer.elapsed();
+    //     if (uc_err != UC_ERR_OK) {
+    //         //FIXME: TODO somthings
+    //         qWarning()<<"void Stm32::runToTime(uint64_t time) uc err"<<uc_strerror(uc_err)<<"pc:"<<Qt::hex<<getCurrentPc()<<Qt::endl;
+    //         Simulator::self()->stopSim();
+    //     }
+    //     qDebug()<<"run to time:"<<time<<"mcu freq"<<sys_freq<<" "<<uc_strerror(uc_err)<<"target_instr_count:"<<target_instr_count<<"use time:"<<time_use<<"ms"<<Qt::endl;
+    //     last_target_time = time;
+    //     target_instr_begin=getCurrentPc()|1;//// 将 LSB 置 1，告诉 Unicorn 下次从这个地址开始时使用Thumb 模式
+    // } else {
+    //     qWarning() << "rcm peripheral not found for instruction calculation.";
+    // }***/
+}
 void Stm32::runEvent() {
-    // 现在有个问题，就是时间是异步的，模拟器时间和mcu内部时间是异步，如果二者时间差超过一个值就会导致mcu发出的事件让模拟器时间回溯
-    //FIXME 所以就是得解决时间不同步问题
     while (!event_heap.empty()) {
        // qDebug()<<"stm32 runEvent:"<<Qt::endl;
         ScheduledEvent event = event_heap.top();
@@ -369,6 +460,8 @@ bool Stm32::hook_code(uc_engine *uc, uint64_t address, uint32_t size, void *user
     const auto stm32_instance = static_cast<Stm32*>(user_data);
     const auto rcm_device = dynamic_cast<stm32Rcm::Rcm*>(stm32_instance->peripheral_registry->findDevice(RCM_BASE));
     rcm_device->run_tick(uc, address, size, user_data);
+    // 临时打印 PC，看它是如何从 0x8000359 变成 0x4 的
+    // qDebug() << "Trace PC:" << Qt::hex << address;
     return QemuDevice::hook_code( uc, address, size, user_data );
 }
 

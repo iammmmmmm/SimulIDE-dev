@@ -251,9 +251,22 @@ void Simulator::runCircuit()
     {
         if( QemuDevice::self() )
         {
-            if( m_firstEvent ) nextTime = m_firstEvent->eventTime;
-            else               nextTime = endRun;
-
+            if( m_firstEvent ) {
+                // 如果发现事件时间大于一个正常范围（比如大于 1000秒，或者明显溢出）
+                if (m_firstEvent->eventTime > 0xF000000000000000ULL) {
+                    qDebug() << "[发现元凶] 队列首个事件时间已经炸了！";
+                    qDebug() << "事件地址:" << m_firstEvent << " 错误时间戳:" << m_firstEvent->eventTime;
+                    // 暴力修正：把这个坏事件的时间强行拉回到当前时间
+                    m_firstEvent->eventTime = m_circTime;
+                }
+                nextTime = m_firstEvent->eventTime;
+                nextTime = m_firstEvent->eventTime;
+            }else {
+                nextTime = endRun;
+            }
+            if (nextTime < m_circTime) {
+                nextTime = m_circTime;
+            }
             QemuDevice::self()->runToTime( nextTime ); // This will add events
         }
         if( !m_firstEvent ) break;

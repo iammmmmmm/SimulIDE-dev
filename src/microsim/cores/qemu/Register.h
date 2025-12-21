@@ -9,6 +9,7 @@
 #include <memory>
 #include <functional>
 #include <QDebug>
+#include <mutex>
 struct BitField;
 // =========================================================================
 // 0. 回调函数定义
@@ -100,11 +101,11 @@ struct BitField {
 class Register {
   protected:
     uint32_t m_offset;
-    uint32_t m_current_value = 0x00000000;
+    std::atomic<uint32_t> m_current_value = {0x00000000};
     std::string m_name;
     std::map<std::string, BitField *> m_field_map;
     bool s_enable_debug_output=false;
-
+    mutable std::mutex m_callback_mutex;
   public:
     RegisterWriteCallback write_callback = nullptr;
     RegisterReadCallback read_callback = nullptr;
@@ -154,7 +155,7 @@ class Register {
 
     // 模拟读取操作
     uint32_t read(void *user_data) {
-      uint32_t simulated_value = m_current_value; // 默认返回当前内部值（可能已被位域回调修改）
+      uint32_t simulated_value = m_current_value.load(); // 默认返回当前内部值（可能已被位域回调修改）
 
       //位域级别读取回调
       for (const auto &field: m_fields) {
@@ -169,9 +170,10 @@ class Register {
           // 如果回调修改了值，则更新 m_current_value
           // 注意：有些位域读取后会清除标志位，所以需要更新 m_current_value
           const uint32_t new_field_shifted = field_value << field.start_bit;
-          m_current_value = (m_current_value & ~mask) | (new_field_shifted & mask);
+          simulated_value = (simulated_value & ~mask) | (new_field_shifted & mask);
         }
       }
+      m_current_value.store(simulated_value);
       //寄存器级别回调
       if (read_callback != nullptr) {
         read_callback(*this, simulated_value, user_data);
@@ -234,9 +236,10 @@ class Register {
       }
 
       // 2. 直接从 m_current_value 中提取值，不调用 read()
+      const uint32_t current=m_current_value.load(std::memory_order_relaxed);
       const uint32_t mask = ((1U << field->width) - 1) << field->start_bit;
 
-      return (m_current_value & mask) >> field->start_bit;
+      return (current & mask) >> field->start_bit;
     }
     std::string getName() {
       return m_name;
@@ -244,46 +247,51 @@ class Register {
 
     // 模拟写入操作
     void write(uint32_t new_value, int size, void *user_data) {
+      // 锁住回调过程，防止多个线程同时触发副作用逻辑
+     // std::lock_guard<std::mutex> lock(m_callback_mutex);
+
       const uint32_t bit_width = size * 8;
       const uint32_t register_write_mask = (bit_width >= 32) ? 0xFFFFFFFFU : ((1U << bit_width) - 1);
-
       const uint32_t masked_new_value = new_value & register_write_mask;
 
-      const uint32_t old_value = m_current_value;
+       uint32_t old_value = m_current_value.load();
 
-      uint32_t effective_value = old_value & (~register_write_mask);
+      uint32_t effective_value ;
 
-      for (const auto &field: m_fields) {
-        const uint32_t field_mask = ((1U << field.width) - 1) << field.start_bit;
-        const uint32_t effective_mask = field_mask & register_write_mask;
-        if (effective_mask == 0) {
-          continue;
-        }
-        switch (field.access) {
-          case BitFieldAccess::RO:
-          case BitFieldAccess::W1C: {
-            effective_value = (effective_value & ~effective_mask) | (old_value & effective_mask);
-            break;
+      do{
+      effective_value = old_value & (~register_write_mask);
+        for (const auto &field: m_fields) {
+          const uint32_t field_mask = ((1U << field.width) - 1) << field.start_bit;
+          const uint32_t effective_mask = field_mask & register_write_mask;
+          if (effective_mask == 0) {
+            continue;
           }
-          case BitFieldAccess::RW:
-          case BitFieldAccess::WO:
-            effective_value = (effective_value & ~effective_mask) | (masked_new_value &
-              effective_mask);
-            break;
-
-          case BitFieldAccess::W0C: {
-            const uint32_t new_field_value = (masked_new_value & field_mask) >> field.start_bit;
-
-            effective_value = (effective_value & ~effective_mask) | (old_value & effective_mask);
-
-            if (new_field_value == 0) {
-              effective_value &= ~effective_mask;
-            } else {
+          switch (field.access) {
+            case BitFieldAccess::RO:
+            case BitFieldAccess::W1C: {
+              effective_value = (effective_value & ~effective_mask) | (old_value & effective_mask);
+              break;
             }
+            case BitFieldAccess::RW:
+            case BitFieldAccess::WO:
+              effective_value = (effective_value & ~effective_mask) | (masked_new_value &
+                effective_mask);
+              break;
+
+            case BitFieldAccess::W0C: {
+              const uint32_t new_field_value = (masked_new_value & field_mask) >> field.start_bit;
+
+              effective_value = (effective_value & ~effective_mask) | (old_value & effective_mask);
+
+              if (new_field_value == 0) {
+                effective_value &= ~effective_mask;
+              } else {
+              }
+            }
+              break;
           }
-          break;
         }
-      }
+      }while (!m_current_value.compare_exchange_weak(old_value,effective_value));
       m_current_value = effective_value;
 
       for (auto &field: m_fields) {

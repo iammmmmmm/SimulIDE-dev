@@ -173,7 +173,8 @@ class QemuDevice : public Chip
         };
         MemoryParams m_mem_params;
         uint64_t target_instr_count=0;
-        uint64_t target_instr_begin=0;
+        std::atomic<uint64_t> target_instr_begin{0};
+
         //uint64_t target_instr_end=0;
         uint64_t last_target_time=0;
         uint64_t target_time=0;

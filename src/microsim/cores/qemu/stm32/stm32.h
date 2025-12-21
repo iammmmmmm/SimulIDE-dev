@@ -5,6 +5,10 @@
 
 #pragma once
 
+#include <condition_variable>
+#include <mutex>
+#include <thread>
+
 #include "qemudevice.h"
 #include "ioport.h"
 #include "stm32Rcm.h"
@@ -67,4 +71,17 @@ class Stm32 : public QemuDevice
         bool registerPeripheral() override;
         std::unique_ptr<stm32Rcm::Rcm> m_rcm;
         bool hook_code(uc_engine *uc, uint64_t address, uint32_t size, void *user_data) override;
-};
+
+      struct EmuTask {
+      uint64_t count;
+       };
+
+        std::thread m_emuThread;
+        std::queue<EmuTask> m_taskQueue;
+        std::mutex m_queueMutex;
+        std::condition_variable m_queueCv;
+        std::atomic<bool> m_stopThread{false};
+
+        void emuLoop();
+        double m_psRemainder = 0.0; // 记录上次不够跑一条指令剩下的皮秒
+    };
