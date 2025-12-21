@@ -44,7 +44,7 @@ void Rcm::initialize_registers() {
   m_registers[CSTS_OFFSET] = std::make_unique<CSTS_Register>(CSTS_OFFSET);
 
   m_registers[CTRL_OFFSET]->find_field("HSEEN")->write_callback= {
-    [this](Register &reg,const BitField &field,  uint32_t new_field_value,void *user_data) {
+    [this](Register &reg,const BitField &field,  uint32_t new_field_value,void *user_data,const uint64_t simulideTime) {
       if (new_field_value == 1) {
       //open hse
         m_clock_timing.hse_start_tick=m_clock_timing.rcm_ticks;
@@ -53,7 +53,7 @@ void Rcm::initialize_registers() {
     }
   };
   m_registers[CTRL_OFFSET]->find_field("PLLEN")->write_callback= {
-    [this](Register &reg,const BitField &field,  uint32_t new_field_value,void *user_data) {
+    [this](Register &reg,const BitField &field,  uint32_t new_field_value,void *user_data,const uint64_t simulideTime) {
       if (new_field_value == 1) {
         //open pll
         m_clock_timing.pll_start_tick=m_clock_timing.rcm_ticks;
@@ -62,7 +62,7 @@ void Rcm::initialize_registers() {
     }
   };
   m_registers[CFG_OFFSET]->find_field("SYSCLKSEL")->write_callback= {
-    [](Register &reg,const BitField &field,  uint32_t new_field_value,void *user_data) {
+    [](Register &reg,const BitField &field,  uint32_t new_field_value,void *user_data,const uint64_t simulideTime) {
     reg.set_field_value_non_intrusive("SCLKSELSTS",new_field_value);
     }
   };
@@ -74,7 +74,7 @@ void Rcm::initialize_registers() {
 }
 
 // 处理写入操作
-bool Rcm::handle_write(uc_engine *uc, uint64_t address, int size, int64_t value, void *user_data) {
+bool Rcm::handle_write(uc_engine *uc, uint64_t address, int size, int64_t value, void *user_data,const uint64_t simulideTime) {
   if (size != 4) {
     // 仅支持 32 位写入
     qWarning("   [CMU W] WARing: Non-32-bit write operations are ignored. Address: %x",
@@ -84,7 +84,7 @@ bool Rcm::handle_write(uc_engine *uc, uint64_t address, int size, int64_t value,
   const auto offset = static_cast<uint32_t>(address - RCM_BASE);
   if (m_registers.count(offset)) {
     const auto new_value = static_cast<uint32_t>(value);
-  m_registers[offset]->write(new_value,size, user_data);
+  m_registers[offset]->write(new_value,size, user_data,simulideTime);
   }else {
     qWarning().noquote() << QString("   [CMU W: 0x%1] 警告: 访问未注册寄存器!").arg(offset, 0, 16);
     return false;
@@ -94,7 +94,7 @@ bool Rcm::handle_write(uc_engine *uc, uint64_t address, int size, int64_t value,
 }
 
 // 读取处理
-bool Rcm::handle_read(uc_engine *uc,uint64_t address,int size,int64_t *read_value,void *user_data) {
+bool Rcm::handle_read(uc_engine *uc,uint64_t address,int size,int64_t *read_value,void *user_data,const uint64_t simulideTime) {
 
   if (size != 4 || !read_value) {
     qWarning("[RCM R] Read error:  Invalid access size or null pointer at%x",
@@ -105,7 +105,7 @@ bool Rcm::handle_read(uc_engine *uc,uint64_t address,int size,int64_t *read_valu
   // qDebug() << "[RCM Debug] 尝试查找寄存器 Offset:" << Qt::hex << offset<< " Map Size:" << m_registers.size();
   uint32_t stored_value = 0;
   if (m_registers.count(offset)) {
-    stored_value = m_registers[offset]->read(user_data);
+    stored_value = m_registers[offset]->read(user_data,simulideTime);
   } else {
     qWarning().noquote() << QString("   [CMU R: 0x%1] 警告: 访问未注册寄存器!").arg(offset, 0, 16);
     *read_value = 0;
@@ -156,6 +156,7 @@ void Rcm::run_tick(uc_engine *uc, uint64_t address, uint32_t size, void *user_da
   if (m_clock_timing.pll_start_tick!= 0) {
     const uint64_t elapsed_ticks = m_clock_timing.rcm_ticks - m_clock_timing.pll_start_tick;
     if (elapsed_ticks>=m_clock_timing.PLL_DELAY_TICKS) {
+      onFrequencyChange();
       m_registers[CTRL_OFFSET]->set_field_value_non_intrusive("PLLRDYFLG", 1);
       m_clock_timing.pll_start_tick = 0;
       qDebug()<<"[RCM] PLL 启动完成。PLLRDYFLG 已置位1.";

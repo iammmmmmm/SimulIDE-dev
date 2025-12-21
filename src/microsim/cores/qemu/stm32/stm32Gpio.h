@@ -48,8 +48,8 @@ class Gpio : public PeripheralDevice {
     Gpio(uint64_t base_addr, std::string  port_name);
 
     // PeripheralDevice 接口实现
-    bool handle_write(uc_engine *uc, uint64_t address, int size, int64_t value, void *user_data) override;
-    bool handle_read(uc_engine *uc, uint64_t address, int size, int64_t *read_value, void *user_data) override;
+    bool handle_write(uc_engine *uc, uint64_t address, int size, int64_t value, void *user_data, const uint64_t simulide_time) override;
+    bool handle_read(uc_engine *uc, uint64_t address, int size, int64_t *read_value, void *user_data, const uint64_t simulide_time) override;
     uint64_t getBaseAddress() override { return m_base_addr; }
     std::string getName() override { return "GPIO (" + m_port_name + ")"; }
     uint64_t getSize() override { return GPIO_REG_SIZE; }

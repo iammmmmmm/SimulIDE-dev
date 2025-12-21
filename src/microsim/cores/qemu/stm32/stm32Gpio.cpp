@@ -71,7 +71,7 @@ void Gpio::initialize_registers(const string &portName) {
     odata_reg->write_callback = [this](Register &reg,
                                        const BitField &field,
                                        uint32_t new_field_value,
-                                       void *user_data) {
+                                       void *user_data,const uint64_t simulide_time) {
       const uint32_t current_odata = m_registers[ODATA_OFFSET]->
           get_field_value_non_intrusive("ODATA");
       const uint32_t set_mask = new_field_value;
@@ -86,7 +86,7 @@ void Gpio::initialize_registers(const string &portName) {
       EventParams params;
       params.gpio_pin_set_data.port = m_port;
       params.gpio_pin_set_data.next_state = port_state_16bit;
-      stm32_instance->schedule_event(time- Simulator::self()->circTime(), EventActionType::GPIO_PIN_SET, params);
+      stm32_instance->schedule_event(time- simulide_time, EventActionType::GPIO_PIN_SET, params);
      // Simulator::self()->addEvent(time - Simulator::self()->circTime(), stm32_instance);
     };
   }
@@ -102,7 +102,7 @@ void Gpio::initialize_registers(const string &portName) {
     //
     // };
     // 设置整个寄存器的写入回调，处理完整的 32 位值
-    bsc_reg->write_callback = [this](Register &reg, uint32_t new_reg_value, void *user_data) {
+    bsc_reg->write_callback = [this](Register &reg, uint32_t new_reg_value, void *user_data,const uint64_t simulide_time) {
       // qDebug()<<"[GPIO] bsc寄存器操作";
       // new_reg_value 是写入 BSC 寄存器的 32 位完整值
       // 1. 提取 BCy (Bit Clear) 掩码（ 31:16）
@@ -126,12 +126,12 @@ void Gpio::initialize_registers(const string &portName) {
         // qDebug() << "  [BSC CB] ODATA value UNCHANGED: 0x" << Qt::hex << current_odata;
         return;
       }
-      m_registers[ODATA_OFFSET]->set_field_value("ODATA", sizeof(uint32_t), new_odata, user_data);
+      m_registers[ODATA_OFFSET]->set_field_value("ODATA", sizeof(uint32_t), new_odata, user_data, simulide_time);
     };
   }
   const auto bc_reg = m_registers[BC_OFFSET].get();
   if (bc_reg) {
-    bc_reg->write_callback = [this](Register &reg, uint32_t new_reg_value, void *user_data) {
+    bc_reg->write_callback = [this](Register &reg, uint32_t new_reg_value, void *user_data,const uint64_t simulide_time) {
       const uint32_t clear_mask = new_reg_value & 0x0000FFFF;
       if (clear_mask == 0) {
         // qDebug() << "bc clear_mask=0";
@@ -144,7 +144,7 @@ void Gpio::initialize_registers(const string &portName) {
         // qDebug() << "  [gpio BC ] ODATA value UNCHANGED: 0x" << Qt::hex << current_odata;
         return;
       }
-      m_registers[ODATA_OFFSET]->set_field_value("ODATA", sizeof(uint32_t), new_odata, user_data);
+      m_registers[ODATA_OFFSET]->set_field_value("ODATA", sizeof(uint32_t), new_odata, user_data,simulide_time);
     };
   }
 
@@ -155,33 +155,29 @@ void Gpio::initialize_registers(const string &portName) {
   auto *cfghig_reg = m_registers[CFGHIG_OFFSET].get();
 
   if (cfglow_reg) {
-    cfglow_reg->write_callback = [this](Register &reg, uint32_t new_register_value, void *user_data) {
+    cfglow_reg->write_callback = [this](Register &reg, uint32_t new_register_value, void *user_data,const uint64_t simulide_time) {
       const auto stm32_instance = static_cast<Stm32 *>(user_data);
-      const auto rcm_device = dynamic_cast<stm32Rcm::Rcm *>(stm32_instance->peripheral_registry->
-        findDevice(RCM_BASE));
+      const auto rcm_device = dynamic_cast<stm32Rcm::Rcm *>(stm32_instance->peripheral_registry->findDevice(RCM_BASE));
       EventParams params;
       params.gpio_config_data.port=m_port;
       params.gpio_config_data.config=new_register_value;
-      //qDebug()<<"cfglow_reg new_register_value:0x"<<Qt::hex<<new_register_value;
       params.gpio_config_data.shift=0;
       const uint64_t time = rcm_device->getMcuTime();
-      stm32_instance->schedule_event(time- Simulator::self()->circTime(), EventActionType::GPIO_CONFIG, params);
-      // Simulator::self()->addEvent(time - Simulator::self()->circTime(), stm32_instance);
+      stm32_instance->schedule_event(time- simulide_time, EventActionType::GPIO_CONFIG, params);
     };
   }
   if (cfghig_reg) {
-    cfghig_reg->write_callback = [this](Register &reg, uint32_t new_register_value, void *user_data) {
+    cfghig_reg->write_callback = [this](Register &reg, uint32_t new_register_value, void *user_data,const uint64_t simulide_time) {
       const auto stm32_instance = static_cast<Stm32 *>(user_data);
       const auto rcm_device = dynamic_cast<stm32Rcm::Rcm *>(stm32_instance->peripheral_registry->
         findDevice(RCM_BASE));
       EventParams params;
       params.gpio_config_data.port=m_port;
       params.gpio_config_data.config=new_register_value;
-      qDebug()<<"cfglow_reg new_register_value:0x"<<Qt::hex<<new_register_value;
       params.gpio_config_data.shift=8;
       const uint64_t time = rcm_device->getMcuTime();
-      stm32_instance->schedule_event(time- Simulator::self()->circTime(), EventActionType::GPIO_CONFIG, params);
-     // Simulator::self()->addEvent(time - Simulator::self()->circTime(), stm32_instance);
+
+      stm32_instance->schedule_event(time- simulide_time, EventActionType::GPIO_CONFIG, params);
     };
   }
 
@@ -195,7 +191,7 @@ void Gpio::initialize_registers(const string &portName) {
       lockkey_field->write_callback = [](Register &reg,
                                          const BitField &field,
                                          uint32_t new_field_value,
-                                         void *user_data) {
+                                         void *user_data,const uint64_t simulide_time) {
         // TODO: 实现锁定序列检查和锁定/解锁配置寄存器的逻辑。
       };
     }
@@ -246,7 +242,7 @@ bool Gpio::handle_read(uc_engine *uc,
                        uint64_t address,
                        int size,
                        int64_t *read_value,
-                       void *user_data) {
+                       void *user_data,const uint64_t simulide_time) {
   // 仅支持 32 位读写
   if (size != 4) {
     qWarning() << "[GPIO R] Error: Only 32-bit (4 byte) access is supported for" << getName().
@@ -256,7 +252,7 @@ bool Gpio::handle_read(uc_engine *uc,
   const auto offset = static_cast<uint32_t>(address - m_base_addr);
   uint32_t stored_value = 0;
   if (m_registers.count(offset)) {
-    stored_value = m_registers[offset]->read(user_data);
+    stored_value = m_registers[offset]->read(user_data,simulide_time);
   } else {
     qWarning().noquote() << "   [GPIO R: 0x" << Qt::hex << offset << "] 警告: 访问未注册寄存器!";
     *read_value = 0;
@@ -274,7 +270,7 @@ bool Gpio::handle_read(uc_engine *uc,
 /**
  * @brief 处理对 GPIO 寄存器的写操作
  */
-bool Gpio::handle_write(uc_engine *uc, uint64_t address, int size, int64_t value, void *user_data) {
+bool Gpio::handle_write(uc_engine *uc, uint64_t address, int size, int64_t value, void *user_data,const uint64_t simulide_time) {
   // 仅支持 32 位读写
   if (size != 4) {
     qWarning("[GPIO W] Error: Only 32-bit (4 byte) access is supported for %s", getName().c_str());
@@ -284,7 +280,7 @@ bool Gpio::handle_write(uc_engine *uc, uint64_t address, int size, int64_t value
   if (m_registers.count(offset)) {
     const auto new_value = static_cast<uint32_t>(value);
    // qDebug()<<"Gpio::handle_write:0x"<<Qt::hex<<new_value;
-    m_registers[offset]->write(new_value, size, user_data);
+    m_registers[offset]->write(new_value, size, user_data,simulide_time);
   } else {
     qWarning().noquote() << "   [GPIO W: 0x" << Qt::hex << offset << "] 警告: 访问未注册寄存器!";
     return false;

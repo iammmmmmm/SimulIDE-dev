@@ -11,9 +11,9 @@
 class PeripheralDevice:public eElement{
   public:
     explicit PeripheralDevice(): eElement("") {}
-    virtual bool handle_write(uc_engine *uc, uint64_t address, int size, int64_t value, void *user_data);
+    virtual bool handle_write(uc_engine *uc, uint64_t address, int size, int64_t value, void *user_data, const uint64_t simulide_time);
 
-    virtual bool handle_read(uc_engine *uc, uint64_t address, int size, int64_t *read_value, void *user_data);
+    virtual bool handle_read(uc_engine *uc, uint64_t address, int size, int64_t *read_value, void *user_data, const uint64_t simulide_time);
     /**
      * @brief Get the starting address of the peripheral for search
      */

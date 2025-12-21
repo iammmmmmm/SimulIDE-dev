@@ -62,8 +62,8 @@ public:
     Afio();
 
     // PeripheralDevice 接口实现
-    bool handle_write(uc_engine *uc, uint64_t address, int size, int64_t value, void *user_data) override;
-    bool handle_read(uc_engine *uc, uint64_t address, int size, int64_t *read_value, void *user_data) override;
+    bool handle_write(uc_engine *uc, uint64_t address, int size, int64_t value, void *user_data,const uint64_t simulideTime) override;
+    bool handle_read(uc_engine *uc, uint64_t address, int size, int64_t *read_value, void *user_data,const uint64_t simulideTime) override;
     uint64_t getBaseAddress() override { return m_base_addr; }
     std::string getName() override { return m_peripheral_name; }
     uint64_t getSize() override { return AFIO_REG_SIZE; }

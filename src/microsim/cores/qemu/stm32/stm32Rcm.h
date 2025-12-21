@@ -50,8 +50,8 @@ class Rcm : public PeripheralDevice {
   public:
     Rcm(uint64_t hsi_freq,uint64_t hse_freq,uint64_t max_cpu_freq);
     Rcm();
-    bool handle_write(uc_engine *uc, uint64_t address, int size, int64_t value, void *user_data) override;
-    bool handle_read(uc_engine *uc, uint64_t address, int size, int64_t *read_value, void *user_data) override;
+    bool handle_write(uc_engine *uc, uint64_t address, int size, int64_t value, void *user_data, const uint64_t simulide_time) override;
+    bool handle_read(uc_engine *uc, uint64_t address, int size, int64_t *read_value, void *user_data, const uint64_t simulide_time) override;
     uint64_t getBaseAddress() override { return RCM_BASE; }
     std::string getName() override { return "CMU (rcm)"; }
     uint64_t getSize() override {return RCM_END-RCM_BASE;}
@@ -66,16 +66,27 @@ class Rcm : public PeripheralDevice {
     bool isAHPB1ClockEnabled(const std::string& name);
     uint64_t getMcuTime() {
       const uint64_t freq = getSysClockFrequency();
-      const uint64_t ticks = m_clock_timing.rcm_ticks;
-      const uint64_t seconds = ticks / freq;
-      const uint64_t remainder = ticks % freq;
+      if (freq == 0) return m_baseTimePs;
+
+      // 只计算自上次频率切换以来新跑的 ticks
+      const uint64_t delta_ticks = m_clock_timing.rcm_ticks - m_baseTicks;
+      const uint64_t seconds = delta_ticks / freq;
+      const uint64_t remainder = delta_ticks % freq;
       const unsigned __int128 wide_remainder = static_cast<unsigned __int128>(remainder) * 1000000000000ULL;
       const auto remainder_ps = static_cast<uint64_t>(wide_remainder / freq);
-      //to see Stm32::runToTime,二者含义一样，都是来自经验的魔法值
-      return ((seconds * 1000000000000ULL) + remainder_ps)*2;
-     // return (m_clock_timing.rcm_ticks * 1000000000000ULL) / getSysClockFrequency();
+      uint64_t delta_time_ps = ((seconds * 1000000000000ULL) + remainder_ps) * 2;
 
+      return m_baseTimePs + delta_time_ps;
     }
+    uint64_t m_baseTimePs;
+    uint64_t m_baseTicks;
+    void onFrequencyChange() {
+      // 切换前，先把旧频率下跑的时间存起来
+      m_baseTimePs = getMcuTime();
+      // 记录当前的 ticks 作为新频率的起点
+      m_baseTicks = m_clock_timing.rcm_ticks;
+    }
+
     uint64_t getRcmTicks() const {
       return m_clock_timing.rcm_ticks;
     }

@@ -153,7 +153,7 @@ uint64_t mmio_read_callback(uc_engine *uc, uint64_t address, unsigned size, void
 
     if (peripheral) {
         int64_t val = 0;
-        peripheral->handle_read(uc, 0x40000000+address, size, &val, user_data);
+        peripheral->handle_read(uc, 0x40000000+address, size, &val, user_data,Simulator::self()->circTime());
         return static_cast<uint64_t>(val);
     }
     qDebug()<<"mmio_read_callback peripheral==0";
@@ -166,7 +166,7 @@ void mmio_write_callback(uc_engine *uc, uint64_t address, unsigned size, uint64_
     PeripheralDevice *peripheral = device->peripheral_registry->findDevice(0x40000000+address);
 
     if (peripheral) {
-        peripheral->handle_write(uc, 0x40000000+address, size, value, user_data);
+        peripheral->handle_write(uc, 0x40000000+address, size, value, user_data,Simulator::self()->circTime());
     }
 }
 void QemuDevice::stamp()

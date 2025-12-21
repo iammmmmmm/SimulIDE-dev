@@ -16,62 +16,56 @@ struct BitField;
 // =========================================================================
 class Register;
 //FIXME 我们应该在这个玩意成为屎山之前或写了太多太多Reg之前尽量让这个问题少一点，不然下场会很惨
-//TODO 任何对于这个玩意的想法必须尽早实现，尽早测试完善，这里将会是地府大门
+//TODO 任何对于这个玩意的想法必须尽早实现，尽早测试完善，这里将会是黑曜石大门
 /**
  * @brief 位域级别的写入回调函数签名。
- * * 此回调函数在特定位域的值被写入（修改）后执行，用于处理写入操作带来的副作用或进行特殊逻辑。
-该方法会在位域级别读写回调后调用
- * * @param reg 寄存器自身的引用。
+ * @param reg 寄存器自身的引用。
  * @param field 被写入的位域结构体的引用。
- * @param new_field_value 写入该位域的新的值（即位域的实际新值）。**回调函数在此处执行该位域变化引起的副作用。**
- * @param user_data 用户自定义数据指针，用于传递额外的上下文信息。
+ * @param new_field_value 写入该位域的新的值。
+ * @param user_data 用户自定义数据指针。
+ * @param simulideTime 写入发生时的电路模拟器精确时间戳（ps）。
  */
-using BitFieldWriteCallback = std::function<void(Register &reg,
-                                                 const BitField &field,
-                                                 uint32_t new_field_value,
-                                                 void *user_data)>;
+using BitFieldWriteCallback = std::function<void(Register &reg,const BitField &field,uint32_t new_field_value,void *user_data, const uint64_t simulideTime)>;
 
 /**
  * @brief 位域级别的读取回调函数签名。
- * * 此回调函数在特定位域的值被读取前（或在读取值准备好后）执行，用于处理读取操作的副作用或修改即将返回的位域读取值。
-该方法会在位域级别读写回调后调用
- * * @param reg 寄存器自身的引用。
+ * @param reg 寄存器自身的引用。
  * @param field 被读取的位域结构体的引用。
- * @param field_value_to_read 对即将返回的该位域的值的引用。回调函数可以在这里修改返回值，
- * 例如清除状态位（如果该位域是写清零型状态位）或返回特殊的只读值。
- * @param user_data 用户自定义数据指针，用于传递额外的上下文信息。
+ * @param field_value_to_read 对即将返回的该位域值的引用。
+ * @param user_data 用户自定义数据指针。
+ * @param simulideTime 读取发生时的电路模拟器精确时间戳（ps）。
  */
 using BitFieldReadCallback = std::function<void(Register &reg,
                                                 const BitField &field,
                                                 uint32_t &field_value_to_read,
-                                                void *user_data)>;
+                                                void *user_data,
+                                               const uint64_t simulideTime)>;
+
 /**
  * @brief 寄存器级别的写入回调函数签名。
- * * 此回调函数在整个寄存器的值被写入（修改）后执行，用于处理整个寄存器写入操作带来的副作用或进行特殊逻辑。
-该方法会先于寄存器级别读写回调前调用
- * * @param reg 寄存器自身的引用。
- * @param new_register_value 写入该寄存器的新的完整值（即寄存器的实际新值）。**回调函数在此处执行该寄存器变化引起的副作用。**
- * @param user_data 用户自定义数据指针，用于传递额外的上下文信息。
+ * @param reg 寄存器自身的引用。
+ * @param new_register_value 写入该寄存器的新的完整值。
+ * @param user_data 用户自定义数据指针。
+ * @param simulideTime 写入发生时的电路模拟器精确时间戳（ps）。
  */
 using RegisterWriteCallback = std::function<void(Register &reg,
                                                  uint32_t new_register_value,
-                                                 void *user_data)>;
+                                                 void *user_data,
+                                                 const uint64_t simulideTime)>;
 
 
 /**
  * @brief 寄存器级别的读取回调函数签名。
- * * 此回调函数在整个寄存器的值被读取前（或在读取值准备好后）执行，用于处理读取操作的副作用（如清除状态位）或修改即将返回的读取值。
-该方法会先于寄存器级别读写回调前调用
- * * @param reg 寄存器自身的引用。
- * @param register_value_to_read 对即将返回的该寄存器值的引用。回调函数可以在这里修改返回值，
- * 例如，可以实现读取清除（RC）类型的状态位逻辑。
- * @param user_data 用户自定义数据指针，用于传递额外的上下文信息。
+ * @param reg 寄存器自身的引用。
+ * @param register_value_to_read 对即将返回的该寄存器值的引用。
+ * @param user_data 用户自定义数据指针。
+ * @param simulideTime 读取发生时的电路模拟器精确时间戳（ps）。
  */
 using RegisterReadCallback = std::function<void(Register &reg,
                                                 uint32_t &register_value_to_read,
-                                                void *user_data)>;
-
-
+                                                void *user_data,
+                                                const uint64_t simulideTime
+                                                )>;
 // =========================================================================
 // 1. 位域定义结构
 // =========================================================================
@@ -154,7 +148,7 @@ class Register {
     uint32_t get_offset() const { return m_offset; }
 
     // 模拟读取操作
-    uint32_t read(void *user_data) {
+    uint32_t read(void *user_data, const uint64_t simulide_time) {
       uint32_t simulated_value = m_current_value.load(); // 默认返回当前内部值（可能已被位域回调修改）
 
       //位域级别读取回调
@@ -165,7 +159,7 @@ class Register {
           uint32_t field_value = (m_current_value & mask) >> field.start_bit;
 
           // 执行回调，回调可能会修改 field_value
-          field.read_callback(*this, field, field_value, user_data);
+          field.read_callback(*this, field, field_value, user_data,simulide_time);
 
           // 如果回调修改了值，则更新 m_current_value
           // 注意：有些位域读取后会清除标志位，所以需要更新 m_current_value
@@ -176,7 +170,7 @@ class Register {
       m_current_value.store(simulated_value);
       //寄存器级别回调
       if (read_callback != nullptr) {
-        read_callback(*this, simulated_value, user_data);
+        read_callback(*this, simulated_value, user_data,simulide_time);
       }
       // 处理只写 (WO) 属性：确保 WO 位的返回值是 0。
       for (const auto &field: m_fields) {
@@ -199,11 +193,12 @@ class Register {
     * * 注意：此方法会调用 Register::read()，因此会触发所有读回调和副作用。
     * * 模拟CPU/总线读取。
     * * @param field_name 要读取的位域名称。
+    * * @param simulide_time 发生读取操作时模拟器的时间
     * @return uint32_t 位域的值。如果位域不存在，返回 0 并输出警告。
     */
-    uint32_t get_field_value(const std::string &field_name, void *user_data) {
+    uint32_t get_field_value(const std::string &field_name, void *user_data, const uint64_t simulide_time) {
       // 1. 调用 read() 获取当前模拟的寄存器值，确保执行了所有回调。
-      uint32_t current_reg_value = read(user_data);
+      uint32_t current_reg_value = read(user_data,simulide_time);
 
       // 2. 查找位域定义
       const BitField *field = find_field(field_name);
@@ -246,7 +241,7 @@ class Register {
     }
 
     // 模拟写入操作
-    void write(uint32_t new_value, int size, void *user_data) {
+    void write(uint32_t new_value, int size, void *user_data, const uint64_t simulide_time) {
       // 锁住回调过程，防止多个线程同时触发副作用逻辑
      // std::lock_guard<std::mutex> lock(m_callback_mutex);
 
@@ -326,13 +321,13 @@ class Register {
             break;
         }
         if (should_call && field.write_callback) {
-          field.write_callback(*this, field, callback_value, user_data);
+          field.write_callback(*this, field, callback_value,user_data,simulide_time);
         }
       }
       if (write_callback != nullptr) {
         const uint32_t register_callback_value = effective_value & register_write_mask;
         //qDebug().noquote()<<"register_callback_value"<<register_callback_value;
-        write_callback(*this, register_callback_value, user_data);
+        write_callback(*this, register_callback_value, user_data,simulide_time);
       }
 
       if (s_enable_debug_output) {
@@ -346,11 +341,10 @@ class Register {
    * @param field_name 要修改的位域名称。
    * @param size 数据大小
    * @param new_field_value 要设置的位域值。
+   * @param user_data
+   * @param simulide_time
    */
-    void set_field_value(const std::string &field_name,
-                         int size,
-                         uint32_t new_field_value,
-                         void *user_data) {
+    void set_field_value(const std::string &field_name,int size,uint32_t new_field_value,void *user_data, const uint64_t simulide_time) {
       BitField *field = find_field(field_name);
       if (!field) {
         qDebug() << "Error: Field" << field_name.c_str() << "not found in register" << m_name.
@@ -379,7 +373,7 @@ class Register {
 
       // 5. 调用完整的 write 方法来处理所有回调和读写限制。
       // write() 方法将负责处理 RO/WO/W1C/W0C 访问权限。
-      this->write(value_to_write, size, user_data);
+      this->write(value_to_write, size, user_data,simulide_time);
 
       if (s_enable_debug_output) {
         qDebug().noquote() << QString("--- (原子写入) 字段 %1: %2 更新完成 ---")

@@ -45,7 +45,7 @@ bool Afio::is_clock_enabled(uc_engine *uc) const {
 /**
  * @brief 处理对 AFIO 寄存器的读操作
  */
-bool Afio::handle_read(uc_engine *uc, uint64_t address, int size, int64_t *read_value, void *user_data) {
+bool Afio::handle_read(uc_engine *uc, uint64_t address, int size, int64_t *read_value, void *user_data,const uint64_t simulideTime) {
   if (size != 4) {
     qWarning("[AFIO] Error: Only 32-bit (4 byte) access is supported for%s", getName().c_str());
     return false;
@@ -98,7 +98,7 @@ bool Afio::handle_read(uc_engine *uc, uint64_t address, int size, int64_t *read_
 /**
  * @brief 处理对 AFIO 寄存器的写操作
  */
-bool Afio::handle_write(uc_engine *uc, uint64_t address, int size, int64_t value, void *user_data) {
+bool Afio::handle_write(uc_engine *uc, uint64_t address, int size, int64_t value, void *user_data,const uint64_t simulideTime) {
   if (size != 4) {
     qWarning("[AFIO] Error: Only 32-bit (4 byte) access is supported for %s",getName().c_str());
     return false;

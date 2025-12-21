@@ -165,7 +165,7 @@ void Stm32::emuLoop() {
     }
 }
 void Stm32::runToTime(const uint64_t time) {
-    qDebug()<<"[Stm32::runToTime]:time:"<<time;
+   // qDebug()<<"[Stm32::runToTime]:time:"<<time;
     std::lock_guard<std::mutex> lock(m_queueMutex);
     //qDebug() << "[追踪] 当前时间:" << time << " 与上次差值:" << (time - last_target_time);
     if (last_target_time == 0) {
@@ -185,7 +185,7 @@ void Stm32::runToTime(const uint64_t time) {
         const auto rcm_ = dynamic_cast<stm32Rcm::Rcm*>(peripheral_registry->findDevice(RCM_BASE));
         const uint64_t sys_freq = (rcm_ && rcm_->getSysClockFrequency() > 0) ? rcm_->getSysClockFrequency() : 8000000;
         if (sys_freq == 0) {
-qWarning() << "[错误] 系统时钟频率为 0，无法计算指令数";
+        qWarning() << "[error] System clock frequency is 0, cannot count instructions";
             return;
         }
         const double ps_per_inst = (1e12 / static_cast<double>(sys_freq)) * 2.0;
@@ -210,7 +210,7 @@ qWarning() << "[错误] 系统时钟频率为 0，无法计算指令数";
             }
             m_psRemainder=total_ps-(static_cast<double>(count) * ps_per_inst);
             last_target_time = time;
-            qDebug() << "任务队列大小:" << m_taskQueue.size() << " 新增指令数:" << count;
+          //  qDebug() << "任务队列大小:" << m_taskQueue.size() << " 新增指令数:" << count<<"CPU freq:" << sys_freq;
             m_queueCv.notify_one();
         }else {
             qWarning() << "指令数不足 1，等待累计";

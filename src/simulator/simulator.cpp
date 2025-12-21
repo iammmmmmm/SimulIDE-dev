@@ -252,14 +252,12 @@ void Simulator::runCircuit()
         if( QemuDevice::self() )
         {
             if( m_firstEvent ) {
-                // 如果发现事件时间大于一个正常范围（比如大于 1000秒，或者明显溢出）
+                // If the event time is found to be larger than a normal range (such as greater than 1000 seconds, or an obvious overflow)
                 if (m_firstEvent->eventTime > 0xF000000000000000ULL) {
-                    qDebug() << "[发现元凶] 队列首个事件时间已经炸了！";
-                    qDebug() << "事件地址:" << m_firstEvent << " 错误时间戳:" << m_firstEvent->eventTime;
-                    // 暴力修正：把这个坏事件的时间强行拉回到当前时间
+                    qWarning() << "[Simulator::runCircuit]ERROR！ EVENT ADDRESS:" << m_firstEvent << " Bad timestamp:" << m_firstEvent->eventTime;
+                    //Violent correction: force the time of this bad event back to the current time
                     m_firstEvent->eventTime = m_circTime;
                 }
-                nextTime = m_firstEvent->eventTime;
                 nextTime = m_firstEvent->eventTime;
             }else {
                 nextTime = endRun;

@@ -45,12 +45,12 @@ class Fmc: public PeripheralDevice {
                       uint64_t address,
                       int size,
                       int64_t value,
-                      void *user_data) override;
+                      void *user_data,const uint64_t simulide_time) override;
     bool handle_read(uc_engine *uc,
                      uint64_t address,
                      int size,
                      int64_t *read_value,
-                     void *user_data) override;
+                     void *user_data,const uint64_t simulide_time) override;
     uint64_t getBaseAddress() override { return m_base_addr; }
     std::string getName() override { return m_peripheral_name; }
     uint64_t getSize() override { return FMC_REG_SIZE; }
