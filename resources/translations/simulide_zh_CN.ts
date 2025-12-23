@@ -435,7 +435,7 @@
     <message>
         <location filename="../../src/components/active/bjt.cpp" line="27"/>
         <source>BJT</source>
-        <translation>双极结型晶体管（BJT）</translation>
+        <translation type="unfinished">三极管（BJT）</translation>
     </message>
     <message>
         <location filename="../../src/components/active/bjt.cpp" line="51"/>
@@ -445,7 +445,7 @@
     <message>
         <location filename="../../src/components/active/bjt.cpp" line="52"/>
         <source>PNP</source>
-        <translation>PNP晶体管</translation>
+        <translation type="unfinished">PNP型</translation>
     </message>
     <message>
         <location filename="../../src/components/active/bjt.cpp" line="55"/>
@@ -3356,7 +3356,7 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/components/outputs/lamp.cpp" line="24"/>
         <source>Incandescent lamp</source>
-        <translation>Incandescent lamp</translation>
+        <translation type="unfinished">白炽灯</translation>
     </message>
     <message>
         <location filename="../../src/components/outputs/lamp.cpp" line="47"/>
@@ -4542,7 +4542,7 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/components/passive/resistors/potentiometer.cpp" line="29"/>
         <source>Potentiometer</source>
-        <translation>电位器</translation>
+        <translation>电位器/滑动变阻器</translation>
     </message>
     <message>
         <location filename="../../src/components/passive/resistors/potentiometer.cpp" line="72"/>
@@ -4570,7 +4570,7 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/components/meters/probe.cpp" line="31"/>
         <source>Probe</source>
-        <translation>探头</translation>
+        <translation>探针</translation>
     </message>
     <message>
         <location filename="../../src/components/meters/probe.cpp" line="66"/>
@@ -4674,7 +4674,7 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/gui/componentlist/itemlibrary.cpp" line="177"/>
         <source>Passive</source>
-        <translation>无源器件</translation>
+        <translation type="unfinished">无源元件</translation>
     </message>
     <message>
         <location filename="../../src/gui/componentlist/itemlibrary.cpp" line="178"/>
@@ -4689,7 +4689,7 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/gui/componentlist/itemlibrary.cpp" line="190"/>
         <source>Reactive</source>
-        <translation>电抗器件</translation>
+        <translation type="unfinished">电抗元件</translation>
     </message>
     <message>
         <location filename="../../src/gui/componentlist/itemlibrary.cpp" line="196"/>
@@ -4709,7 +4709,8 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/gui/componentlist/itemlibrary.cpp" line="209"/>
         <source>Other Active</source>
-        <translation>其它活动组件</translation>
+        <translatorcomment>直接一个”其它“更好？</translatorcomment>
+        <translation type="unfinished">其它有源元件</translation>
     </message>
     <message>
         <location filename="../../src/gui/componentlist/itemlibrary.cpp" line="215"/>
@@ -4762,7 +4763,7 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/gui/componentlist/itemlibrary.cpp" line="276"/>
         <source>Logic</source>
-        <translation type="unfinished">逻辑组件</translation>
+        <translation type="unfinished">逻辑元件</translation>
     </message>
     <message>
         <location filename="../../src/gui/componentlist/itemlibrary.cpp" line="277"/>
@@ -4772,12 +4773,12 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/gui/componentlist/itemlibrary.cpp" line="283"/>
         <source>Arithmetic</source>
-        <translation type="unfinished">运算</translation>
+        <translation type="unfinished">运算器</translation>
     </message>
     <message>
         <location filename="../../src/gui/componentlist/itemlibrary.cpp" line="291"/>
         <source>Memory</source>
-        <translation>内存</translation>
+        <translation type="unfinished">存储器</translation>
     </message>
     <message>
         <location filename="../../src/gui/componentlist/itemlibrary.cpp" line="301"/>
@@ -4787,7 +4788,7 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/gui/componentlist/itemlibrary.cpp" line="309"/>
         <source>Other Logic</source>
-        <translation type="unfinished">其它逻辑组件</translation>
+        <translation>其它逻辑元件</translation>
     </message>
     <message>
         <location filename="../../src/gui/componentlist/itemlibrary.cpp" line="317"/>
@@ -5026,7 +5027,8 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/components/switches/relay.cpp" line="27"/>
         <source>Relay (all)</source>
-        <translation>继电器 (所有)</translation>
+        <translatorcomment>Relay (all)</translatorcomment>
+        <translation type="unfinished">继电器 (所有)</translation>
     </message>
     <message>
         <location filename="../../src/components/switches/relay.cpp" line="62"/>
@@ -5657,7 +5659,7 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/components/connectors/socket.cpp" line="19"/>
         <source>Socket</source>
-        <translation>接口/插座</translation>
+        <translation type="unfinished">排母</translation>
     </message>
 </context>
 <context>
@@ -6010,7 +6012,7 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/components/switches/switchdip.cpp" line="30"/>
         <source>Switch Dip</source>
-        <translation>DIP 开关</translation>
+        <translation>开关组</translation>
     </message>
     <message>
         <location filename="../../src/components/switches/switchdip.cpp" line="55"/>
@@ -6264,7 +6266,7 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/components/active/triac.cpp" line="28"/>
         <source>Triac</source>
-        <translation>三端双向可控硅开关</translation>
+        <translation type="unfinished">三端双向可控硅</translation>
     </message>
     <message>
         <location filename="../../src/components/active/triac.cpp" line="78"/>
@@ -6315,7 +6317,8 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/components/connectors/tunnel.cpp" line="32"/>
         <source>Tunnel.</source>
-        <translation>隧道.</translation>
+        <translatorcomment>.应该是多余的，然后使用网络标签更符合现实</translatorcomment>
+        <translation type="unfinished">网络标签</translation>
     </message>
     <message>
         <location filename="../../src/components/connectors/tunnel.cpp" line="57"/>
@@ -6757,7 +6760,7 @@ Do you want to save your changes?
     <message>
         <location filename="../../src/gui/appdialogs/infowidget.ui" line="417"/>
         <source>Main MCU:</source>
-        <translation>主单片机：</translation>
+        <translation type="unfinished">主单片机：</translation>
     </message>
     <message>
         <location filename="../../src/gui/appdialogs/infowidget.ui" line="753"/>
