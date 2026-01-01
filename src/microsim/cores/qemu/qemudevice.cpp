@@ -52,7 +52,7 @@ Component* QemuDevice::construct( QString type, QString id )
         qDebug() << "\nQemuDevice::construct ERROR: only one QemuDevice allowed\n";
         return nullptr;
     }
-    QString device = Chip::getDevice( id );
+    QString device = getDevice( id );
 
     QemuDevice* qdev = nullptr;
 
@@ -96,7 +96,6 @@ QemuDevice::QemuDevice( QString type, QString id )
                                , this, &QemuDevice::extraArgs, &QemuDevice::setExtraArgs )
     }, 0 } );
     unicorn_emulator_ptr=std::make_unique<UnicornEmulator>(arch,mode);
-
 }
 QemuDevice::~QemuDevice()
 {

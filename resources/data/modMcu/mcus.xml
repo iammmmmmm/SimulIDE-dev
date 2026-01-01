@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mcus>
+  <mcu lib="stm32_core" type="stm32f103c8" />
+  <mcu lib="avr_core"  type="atmega328p" />
+  <mcu lib="my_custom_mcu" type="custom_chip" />
+</mcus>

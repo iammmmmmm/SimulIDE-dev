@@ -70,6 +70,7 @@ INCLUDEPATH += $$PWD/src \
     $$PWD/src/microsim/cores/qemu \
     $$PWD/src/microsim/cores/qemu/esp32 \
     $$PWD/src/microsim/cores/qemu/stm32 \
+    $$PWD/src/microsim/cores/qemu/modMcu \
     $$PWD/src/microsim/modules \
     $$PWD/src/microsim/modules/memory \
     $$PWD/src/microsim/modules/usart \
@@ -147,7 +148,7 @@ DEFINES += APP_VERSION=\\\"$$VERSION-$$RELEASE\\\"
 DEFINES += BUILDDATE=\\\"$$BUILD_DATE\\\"
 
 TARGET_NAME   = SimulIDE_$$VERSION-$$RELEASE
-TARGET_PREFIX = $$BUILD_DIR/executables/$$TARGET_NAME
+TARGET_PREFIX = $$OUT_PWD/executables/$$TARGET_NAME
 
 OBJECTS_DIR *= $$OUT_PWD/build/objects
 MOC_DIR     *= $$OUT_PWD/build/moc

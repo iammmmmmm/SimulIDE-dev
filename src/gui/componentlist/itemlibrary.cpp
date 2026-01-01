@@ -7,6 +7,9 @@
 #include "circuit.h"
 
 //BEGIN Item includes
+#include <QDir>
+#include <QDomDocument>
+
 #include "ampmeter.h"
 #include "adc.h"
 #include "aip31068_i2c.h"
@@ -79,6 +82,7 @@
 #include "max72xx_matrix.h"
 #include "mcu.h"
 #include "memory.h"
+#include "ModMcu.h"
 #include "mosfet.h"
 #include "mux.h"
 #include "mux_analog.h"
@@ -263,7 +267,8 @@ void ItemLibrary::loadItems()
     addItem( new LibraryItem("STM32F103V8", "STM32", "ic2.png", "STM32F103V8", Stm32::construct));
     addItem( new LibraryItem("Espressif", "Micro", "ic2.png", "Espressif", nullptr) );
     addItem( new LibraryItem("Shields", "Micro", "ic2.png", "Shields"  , nullptr) );
-
+    qDebug()<<Q_FUNC_INFO<<"loadModMcu";
+    loadModMcu();
     addItem( new LibraryItem( QObject::tr("Sensors"), "Micro", "1to2.png","Sensors", nullptr ) );
     addItem( Mcu::libraryItem() );
     addItem( SR04::libraryItem() );
@@ -344,6 +349,52 @@ void ItemLibrary::loadItems()
 void ItemLibrary::addItem( LibraryItem* item )
 {
     if( item ) m_items.append( item );
+}
+void ItemLibrary::loadModMcu() {
+    addItem( new LibraryItem("ModMcu"  , "Micro", "ic2.png", "ModMcu", nullptr) );
+   // addItem( new LibraryItem("STM32F103C8", "ModMcu", "ic2.png", "STM32F103C8", Stm32::construct));
+
+    QMap<QString, QString> mcuLibMap;
+    QString xmlPath = QDir(QCoreApplication::applicationDirPath()).absoluteFilePath("data/modMcu/mcus.xml");
+
+    QFile file(xmlPath);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        qWarning() << "Unable to open XML configuration file:" << xmlPath << "Error reason:" << file.errorString();
+        return;
+    }
+
+    QDomDocument doc;
+    QString errorMsg;
+    int errorLine, errorColumn;
+
+    if (!doc.setContent(&file, &errorMsg, &errorLine, &errorColumn)) {
+        qWarning() << "XML syntax error:" << errorMsg << "Line:" << errorLine << "Column:" << errorColumn;
+        file.close();
+        return;
+    }
+    file.close();
+
+    mcuLibMap.clear();
+
+    QDomNodeList mcuList = doc.elementsByTagName("mcu");
+    for (int i = 0; i < mcuList.count(); ++i) {
+        QDomElement mcuElem = mcuList.at(i).toElement();
+        if (!mcuElem.isNull()) {
+            QString mcuType = mcuElem.attribute("type");
+            QString mcuLib = mcuElem.attribute("lib");
+
+            if (!mcuType.isEmpty()) {
+                mcuLibMap.insert(mcuType, mcuLib);
+                qDebug() << "Configuration loaded: Type =" << mcuType << ", Lib =" << mcuLib;
+            }
+        }
+    }
+    for (auto it = mcuLibMap.constBegin(); it != mcuLibMap.constEnd(); ++it) {
+        qDebug() << "Type:" << it.key() << "Lib:" << it.value();
+        addItem(new LibraryItem(it.key(),"ModMcu","ic2.png",it.key(),ModMcu::construct));
+    }
+
+    qDebug() << "XML Loading completed, total loading" << mcuLibMap.size() << "MCU configuration";
 }
 
 Component* ItemLibrary::createItem( QString type, QString id )

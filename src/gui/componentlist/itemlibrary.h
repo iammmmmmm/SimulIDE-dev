@@ -21,7 +21,8 @@ class ItemLibrary
         Component* createItem( QString type, QString id );
 
         void addItem( LibraryItem* item );
-        
+
+        void loadModMcu();
         void loadItems();
 
     protected:

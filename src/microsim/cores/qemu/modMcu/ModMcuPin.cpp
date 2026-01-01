@@ -1,0 +1,174 @@
+#include "ModMcuPin.h"
+
+#include <QPainter>
+
+#include "ModMcu.h"
+
+class QWidget;
+class QStyleOptionGraphicsItem;
+class QPainter;
+ModMcuPin::ModMcuPin( uint8_t port, int i, QString id, QemuDevice* mcu )
+        : IoPin( 0, QPoint(0,0), id, 0, mcu, input )
+        , QemuModule( mcu, i )
+{
+    //m_id     = id;
+    m_port   = port;
+
+    m_pullAdmit = 1e5; // 10k
+
+    double vdd = 3.3; //m_port->getMcu()->vdd();
+    m_outHighV = vdd;
+    m_inpHighV = vdd/2;
+    m_inpLowV  = vdd/2;
+
+    m_pinMask = 1<<i;
+    modMcu=static_cast<ModMcu*>(m_device);
+}
+ModMcuPin::~ModMcuPin() {}
+
+void ModMcuPin::initialize()
+{
+    //m_outCtrl = false;
+    //m_dirCtrl = false;
+    //m_isAnalog = false;
+    ////m_portState = false;
+    //
+    //double vdd = 3.3; //m_port->getMcu()->vdd();
+    //m_outHighV = vdd;
+    //m_inpHighV = vdd/2;
+    //m_inpLowV  = vdd/2;
+    //
+    IoPin::initialize();
+}
+
+void ModMcuPin::stamp()
+{
+    IoPin::stamp();
+
+    m_alternate = false;
+    m_analog = false;
+    m_pull = false;
+    setPinMode( input );
+
+    //setPull( true );
+    updateStep();
+
+    //if( !m_dirCtrl ) setDirection( m_outMask );
+    //setPullup( m_puMask ? 1e5 : 0 );
+    //if( !m_outCtrl && m_outMask ) IoPin::setOutState( true );
+    //update();
+}
+
+void ModMcuPin::voltChanged()
+{
+    bool oldState = m_inpState;
+    bool newState = IoPin::getInpState();
+
+    if( oldState == newState ) return;
+
+    modMcu->pinVoltChanged(m_port-1,m_number,newState);
+    // while( m_arena->qemuAction )        // Wait for previous action executed
+    // {
+    //     ; /// TODO: add timeout
+    // }
+    // m_arena->data8 = m_port-1;
+    // m_arena->mask8 = m_number;
+    // m_arena->data16 = newState;
+    // m_arena->qemuAction = SIM_GPIO_IN;
+}
+
+void ModMcuPin::setPinMode( pinMode_t mode )
+{
+    IoPin::setPinMode( mode );
+    changeCallBack( this, mode == input );
+}
+
+void ModMcuPin::setPull( bool p )
+{
+    if( m_pull == p ) return;
+    m_pull = p;
+    setOutState( m_outState );
+}
+
+bool ModMcuPin::setAlternate( bool a ) // If changing to Not Alternate, return false
+{
+    if( m_alternate == a ) return true;
+    m_alternate = a;
+    if( a ) qDebug() << "ModMcuPin::setAlternate" << this->m_id;
+    return a;
+}
+
+void ModMcuPin::setAnalog( bool a ) /// TODO: if changing to Not Analog, return false
+{
+    if( m_analog == a ) return;
+    m_analog = a;
+}
+
+void ModMcuPin::setPortState(  bool high ) // Set output from Port register
+{
+    if( m_alternate ) return;
+    setPinState( high );
+}
+
+void ModMcuPin::setOutState( bool high ) // Set output from Alternate (peripheral)
+{
+    if( m_alternate ) setPinState( high );
+}
+
+void ModMcuPin::scheduleState( bool high, uint64_t time )
+{
+    if( m_alternate ) IoPin::scheduleState( high, time );
+}
+
+void ModMcuPin::setPinState( bool high ) // Set Output to Hight or Low
+{
+
+   // qDebug()<<"Stm32Pin::setPinState high:"<<high<<"alternate"<<m_alternate<<"m_pinMode"<<m_pinMode;
+    m_outState = m_nextState = high;
+    //if( m_pinMode < openCo  || m_stateZ ) return;
+
+    //if( m_inverted ) high = !high;
+
+    switch( m_pinMode )
+    {
+        case undef_mode: return;
+        case input:
+            if( m_pull ){
+                m_outVolt = high ? m_outHighV : m_outLowV;
+                ePin::stampCurrent( m_outVolt*m_pullAdmit );
+            }
+           // qDebug()<<"Stm32Pin::setPinState input id:"<<m_id;
+            break;
+        case output:
+            m_outVolt = high ? m_outHighV : m_outLowV;
+            ePin::stampCurrent( m_outVolt*m_admit );
+            //qDebug()<<"Stm32Pin::setPinState outPut"<<m_outVolt;
+            break;
+        case openCo:
+            m_gndAdmit = high ? 1/1e8 : 1/m_outputImp;
+            updtState();
+            break;
+        default: return;
+    }
+}
+
+void ModMcuPin::paint( QPainter* p, const QStyleOptionGraphicsItem* o, QWidget* w )
+{
+    if( !isVisible() ) return;
+    Pin::paint( p, o, w );
+
+    if( !m_pull ) return;
+    if( m_pinMode > openCo ) return;
+
+    // Draw pullUp/Down dot
+
+    if( m_outState ) p->setBrush( QColor( 255, 180,   0 ) );
+    else             p->setBrush( QColor(   0, 180, 255 ) );
+
+    QPen pen = p->pen();
+    pen.setWidthF( 0 );
+    p->setPen(pen);
+    int start = (m_length > 4) ? m_length-4.5 : 3.5;
+    QRectF rect( start+0.6,-1.5, 3, 3 );
+    p->drawEllipse(rect);
+}

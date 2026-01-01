@@ -86,7 +86,7 @@ class QemuDevice : public Chip
         void runEvent() override;
 
         QString firmware() { return m_firmware; }
-        void setFirmware( QString file );
+        virtual void setFirmware( QString file );
 
         QString extraArgs()  { return m_extraArgs; }
         void setExtraArgs( QString a ){ m_extraArgs = a; }
